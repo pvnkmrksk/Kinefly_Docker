@@ -111,8 +111,26 @@ RUN apt-get update && apt-get install -y \
 COPY launch_files/rhag/_main.launch /root/catkin/src/Kinefly/launch/rhag/
 COPY launch_files/rhag/camera_1394.launch /root/catkin/src/Kinefly/launch/rhag/
 
+# Create directory for Kinefly bridge scripts
+RUN mkdir -p /opt/Kinefly_docker
 
+# Copy all bridge scripts and configuration files to the container
+COPY ros_zmq_bridge.py /opt/Kinefly_docker/
+COPY socket_zmq_republisher.py /opt/Kinefly_docker/
+COPY test_zmq_client.py /opt/Kinefly_docker/
+COPY test_camera.sh /opt/Kinefly_docker/
+COPY requirements.txt /opt/Kinefly_docker/
+COPY setup.sh /opt/Kinefly_docker/
+COPY start_bridge.sh /opt/Kinefly_docker/
+RUN chmod +x /opt/Kinefly_docker/setup.sh /opt/Kinefly_docker/start_bridge.sh /opt/Kinefly_docker/test_camera.sh
 
+# Install Python dependencies for ZMQ bridge
+RUN apt-get update && apt-get install -y \
+    python-pip \
+    python3-pip \
+    && pip install "click==6.7" "pyzmq==17.1.2" \
+    && pip3 install "click==7.0" "pyzmq==18.1.0" \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set up the entrypoint
 COPY entrypoint.sh /entrypoint.sh

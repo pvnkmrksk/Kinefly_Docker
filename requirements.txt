@@ -1,0 +1,10 @@
+# ROS ZMQ Bridge Dependencies
+# Updated for modern Python versions (Python 3.8+)
+
+# Core dependencies
+click>=7.0,<9.0  # Command line interface
+pyzmq>=22.0,<26.0  # ZeroMQ Python bindings (modern version)
+rospkg>=1.1.0,<2.0  # ROS package utilities
+
+# Note: rospy and ROS messages are provided by the ROS installation
+# Note: Standard library modules (os, sys, json, math, socket, select) don't need to be listed 
