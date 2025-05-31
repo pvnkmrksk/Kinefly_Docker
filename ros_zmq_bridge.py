@@ -106,7 +106,7 @@ def process_ros_message(msg, socket_zmq):
             "x": left_angle,  # For backward compatibility with Unity
             "y": right_angle,
             "z": 0.0,
-            "yaw": 0.0,
+            "yaw": left_angle - right_angle,
             "pitch": 0.0,
             "roll": 0.0,
         },
