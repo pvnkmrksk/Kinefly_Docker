@@ -6,6 +6,11 @@ import json
 import math
 import click
 
+# Add Kinefly message path to Python path
+kinefly_msg_path = "/root/catkin/src/Kinefly/src"
+if kinefly_msg_path not in sys.path:
+    sys.path.insert(0, kinefly_msg_path)
+
 # Debug information
 print("\n=== Debug Information ===")
 print("Python Path:")
@@ -22,14 +27,6 @@ try:
     rospack = rospkg.RosPack()
     kinefly_path = rospack.get_path("Kinefly")
     print("\nKinefly package found at: {}".format(kinefly_path))
-
-    # Add the messages path to Python path
-    msg_path = os.path.join(
-        os.path.dirname(kinefly_path), "devel", "lib", "python2.7", "dist-packages"
-    )
-    if msg_path not in sys.path:
-        sys.path.append(msg_path)
-        print("Added to Python path: {}".format(msg_path))
 except Exception as e:
     print("Error finding Kinefly package: {}".format(e))
 

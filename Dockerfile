@@ -114,30 +114,36 @@ COPY launch_files/rhag/camera_1394.launch /root/catkin/src/Kinefly/launch/rhag/
 # Create directory for Kinefly bridge scripts
 RUN mkdir -p /opt/Kinefly_docker
 
-# Copy all bridge scripts and configuration files to the container
+# Copy bridge scripts and test files
 COPY ros_zmq_bridge.py /opt/Kinefly_docker/
 COPY socket_zmq_republisher.py /opt/Kinefly_docker/
 COPY test_zmq_client.py /opt/Kinefly_docker/
 COPY test_camera.sh /opt/Kinefly_docker/
+COPY test_flystate_publisher.py /opt/Kinefly_docker/
 COPY requirements.txt /opt/Kinefly_docker/
 COPY setup.sh /opt/Kinefly_docker/
 COPY start_bridge.sh /opt/Kinefly_docker/
+
+# Make scripts executable
 RUN chmod +x /opt/Kinefly_docker/setup.sh /opt/Kinefly_docker/start_bridge.sh /opt/Kinefly_docker/test_camera.sh
 
-# Install Python dependencies for ZMQ bridge
+# Install Python dependencies for bridge scripts
 RUN apt-get update && apt-get install -y \
     python-pip \
     python3-pip \
-    && pip install "click==6.7" "pyzmq==17.1.2" \
-    && pip3 install "click==7.0" "pyzmq==18.1.0" \
-    && rm -rf /var/lib/apt/lists/*
+    && pip install click==6.7 pyzmq==17.1.2 rospkg==1.1.10
 
-# Set up the entrypoint
+# Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Final setup steps
+# Set environment variables
 RUN echo "export RIG=rhag" >> ~/.bashrc
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && source /root/catkin/devel/setup.bash && rosmake Kinefly"
+
+# Set Python path for Kinefly messages
+RUN echo "export PYTHONPATH=/root/catkin/src/Kinefly/src:\$PYTHONPATH" >> ~/.bashrc
+
+# Build the workspace one final time to ensure everything is compiled
+RUN /bin/bash -c "source /opt/ros/kinetic/setup.bash && source /root/catkin/devel/setup.bash && cd /root/catkin && catkin_make"
 
 ENTRYPOINT ["/entrypoint.sh"]
