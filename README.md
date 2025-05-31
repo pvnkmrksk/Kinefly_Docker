@@ -553,3 +553,438 @@ rosrun camera_calibration cameracalibrator.py \
 - **Manual exposure control**: Essential for consistent tracking
 - **MJPEG support**: For efficient compression
 - **High frame rate capability**: 30+ FPS at desired resolution 
+
+### ZMQ Bridge Socket Configuration
+
+The bridge supports flexible socket configuration for different network setups:
+
+#### Running with Custom Socket/Port
+
+```bash
+# Inside Docker container, navigate to launch folder or bridge location
+cd /root/catkin/src/Kinefly/launch/  # New location after latest Docker build
+# OR
+cd /opt/Kinefly_docker/              # Original location
+
+# Default: Bind to all interfaces on port 9871
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:9871"
+
+# Custom port: Bind to all interfaces on port 9872
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:9872"
+
+# Localhost only: Bind to localhost on port 9871
+python2 ros_zmq_bridge.py --zmq-url "tcp://127.0.0.1:9871"
+
+# Specific IP: Bind to specific network interface
+python2 ros_zmq_bridge.py --zmq-url "tcp://192.168.1.100:9871"
+
+# Custom topic and socket
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:9873" --topic "/kinefly/flystate"
+```
+
+#### Common Socket Configurations
+
+| Use Case | ZMQ URL | Description |
+|----------|---------|-------------|
+| **Local Testing** | `tcp://127.0.0.1:9871` | Only accessible from same machine |
+| **Docker Network** | `tcp://*:9871` | Accessible from host via Docker's network |
+| **LAN Access** | `tcp://0.0.0.0:9871` | Accessible from any machine on local network |
+| **Specific Interface** | `tcp://192.168.1.100:9871` | Bind to specific network interface |
+| **Custom Port** | `tcp://*:9872` | Use different port to avoid conflicts |
+
+#### Testing Socket Connectivity
+
+```bash
+# From host machine, test if ZMQ socket is accessible
+python3 test_zmq_client.py --zmq-url "tcp://localhost:9871"
+
+# Test custom port
+python3 test_zmq_client.py --zmq-url "tcp://localhost:9872"
+
+# Test from different machine (replace IP with Docker host IP)
+python3 test_zmq_client.py --zmq-url "tcp://192.168.1.100:9871"
+```
+
+#### Network Troubleshooting
+
+1. **Port not accessible from host**:
+   ```bash
+   # Ensure Docker is run with --net=host
+   docker run -it --privileged --net=host kinefly
+   
+   # Check if port is listening
+   netstat -an | grep 9871
+   ```
+
+2. **Firewall blocking connection**:
+   ```bash
+   # On Ubuntu/Debian host
+   sudo ufw allow 9871/tcp
+   
+   # Check iptables
+   sudo iptables -L | grep 9871
+   ```
+
+3. **Cannot connect from external machine**:
+   ```bash
+   # Use 0.0.0.0 or * to bind to all interfaces
+   python2 ros_zmq_bridge.py --zmq-url "tcp://0.0.0.0:9871"
+   ```
+
+### Testing the Bridge 
+
+## Running Kinefly and ZMQ Bridge Together
+
+You can run both Kinefly and the ZMQ bridge simultaneously using several methods:
+
+### Method 1: Multiple Docker Terminals (Recommended)
+
+**Step 1:** Start the container with a name
+```bash
+docker run -it \
+    --privileged \
+    --net=host \
+    --env="DISPLAY" \
+    --env="QT_X11_NO_MITSHM=1" \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    --name kinefly_container \
+    --entrypoint /bin/bash \
+    kinefly
+```
+
+**Step 2:** In the first terminal, start Kinefly
+```bash
+# Inside the container (Terminal 1)
+source /opt/ros/kinetic/setup.bash
+source /root/catkin/devel/setup.bash
+export RIG=rhag
+
+# Start Kinefly
+roslaunch Kinefly main_1394.launch rig:=rhag
+```
+
+**Step 3:** Open a second terminal to the same container
+```bash
+# From host machine (Terminal 2)
+docker exec -it kinefly_container /bin/bash
+```
+
+**Step 4:** In the second terminal, start the ZMQ bridge
+```bash
+# Inside the container (Terminal 2)
+source /opt/ros/kinetic/setup.bash
+source /root/catkin/devel/setup.bash
+export PYTHONPATH=/root/catkin/src/Kinefly/src:$PYTHONPATH
+
+# Navigate to bridge location
+cd /root/catkin/src/Kinefly/launch/
+
+# Start ZMQ bridge
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:9871"
+```
+
+### Method 2: Using Screen/Tmux (Terminal Multiplexer)
+
+**Step 1:** Start container and install screen
+```bash
+docker run -it \
+    --privileged \
+    --net=host \
+    --env="DISPLAY" \
+    --env="QT_X11_NO_MITSHM=1" \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    --entrypoint /bin/bash \
+    kinefly
+
+# Inside container, install screen
+apt-get update && apt-get install -y screen
+```
+
+**Step 2:** Create screen sessions
+```bash
+# Start first screen session for Kinefly
+screen -S kinefly
+source /opt/ros/kinetic/setup.bash
+source /root/catkin/devel/setup.bash
+export RIG=rhag
+roslaunch Kinefly main_1394.launch rig:=rhag
+# Press Ctrl+A, then D to detach
+
+# Start second screen session for ZMQ bridge  
+screen -S zmq_bridge
+source /opt/ros/kinetic/setup.bash
+source /root/catkin/devel/setup.bash
+export PYTHONPATH=/root/catkin/src/Kinefly/src:$PYTHONPATH
+cd /root/catkin/src/Kinefly/launch/
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:9871"
+# Press Ctrl+A, then D to detach
+
+# List active sessions
+screen -ls
+
+# Reattach to sessions
+screen -r kinefly      # Attach to Kinefly session
+screen -r zmq_bridge   # Attach to ZMQ bridge session
+```
+
+### Method 3: Background Processes
+
+```bash
+# Start container
+docker run -it \
+    --privileged \
+    --net=host \
+    --env="DISPLAY" \
+    --env="QT_X11_NO_MITSHM=1" \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    --entrypoint /bin/bash \
+    kinefly
+
+# Inside container, setup environment
+source /opt/ros/kinetic/setup.bash
+source /root/catkin/devel/setup.bash
+export RIG=rhag
+export PYTHONPATH=/root/catkin/src/Kinefly/src:$PYTHONPATH
+
+# Start Kinefly in background
+nohup roslaunch Kinefly main_1394.launch rig:=rhag > kinefly.log 2>&1 &
+
+# Wait a moment for ROS to initialize
+sleep 10
+
+# Start ZMQ bridge in background
+cd /root/catkin/src/Kinefly/launch/
+nohup python2 ros_zmq_bridge.py --zmq-url "tcp://*:9871" > zmq_bridge.log 2>&1 &
+
+# Monitor logs
+tail -f kinefly.log        # Monitor Kinefly
+tail -f zmq_bridge.log     # Monitor ZMQ bridge
+
+# Check running processes
+ps aux | grep ros
+ps aux | grep python
+```
+
+### Method 4: All-in-One Startup Script
+
+Create a script that starts both processes:
+
+```bash
+# Start container
+docker run -it \
+    --privileged \
+    --net=host \
+    --env="DISPLAY" \
+    --env="QT_X11_NO_MITSHM=1" \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    --entrypoint /bin/bash \
+    kinefly
+
+# Inside container, use the combined startup script
+cd /opt/Kinefly_docker
+./start_kinefly_with_bridge.sh
+
+# Or with custom options
+./start_kinefly_with_bridge.sh --zmq-port 9872
+./start_kinefly_with_bridge.sh --zmq-url "tcp://0.0.0.0:9871"
+./start_kinefly_with_bridge.sh --rig rhag --zmq-port 9873
+```
+
+**Script features:**
+- ✅ Starts both Kinefly and ZMQ bridge automatically
+- ✅ Monitors process health and reports failures
+- ✅ Proper cleanup on Ctrl+C
+- ✅ Customizable ZMQ port and rig settings
+- ✅ Real-time status reporting
+- ✅ Log file management
+
+### Quick Test Commands
+
+After both are running, test the setup:
+
+```bash
+# Test ZMQ connection from host
+python3 test_zmq_client.py --zmq-url "tcp://localhost:9871"
+
+# Check ROS topics (from another container terminal)
+docker exec -it kinefly_container bash -c "source /opt/ros/kinetic/setup.bash && rostopic list"
+
+# Monitor wing tracking data
+docker exec -it kinefly_container bash -c "source /opt/ros/kinetic/setup.bash && rostopic echo /kinefly/flystate --once"
+```
+
+### Troubleshooting Multiple Processes
+
+1. **One process fails to start:**
+   ```bash
+   # Check logs
+   tail -f kinefly.log
+   tail -f zmq_bridge.log
+   
+   # Check process status
+   ps aux | grep ros
+   ps aux | grep python
+   ```
+
+2. **Port conflicts:**
+   ```bash
+   # Use different port
+   ./start_kinefly_with_bridge.sh --zmq-port 9872
+   
+   # Check what's using the port
+   netstat -an | grep 9871
+   ```
+
+3. **ROS communication issues:**
+   ```bash
+   # Check ROS master
+   echo $ROS_MASTER_URI
+   
+   # List active topics
+   rostopic list
+   
+   # Check if Kinefly is publishing
+   rostopic hz /kinefly/flystate
+   ```
+
+### Recommended Workflow
+
+For the best experience, use **Method 1 (Multiple Terminals)**:
+
+1. **Terminal 1:** Run Kinefly and monitor its GUI
+2. **Terminal 2:** Run ZMQ bridge and monitor data flow  
+3. **Host:** Run your external application (Unity, Python client, etc.)
+
+This gives you full control and visibility of both processes.
+
+## Step-by-Step: Running Kinefly with Main Launch
+
+Here's the cleanest way to start Kinefly using the main launch file:
+
+### 🚀 Quick Start (Single Terminal)
+
+**Step 1:** Start the Docker container
+```bash
+docker run -it \
+    --privileged \
+    --net=host \
+    --env="DISPLAY" \
+    --env="QT_X11_NO_MITSHM=1" \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    --name kinefly_container \
+    --entrypoint /bin/bash \
+    kinefly
+```
+
+**Step 2:** Setup ROS environment inside container
+```bash
+source /opt/ros/kinetic/setup.bash
+source /root/catkin/devel/setup.bash
+export RIG=rhag
+```
+
+**Step 3:** Start Kinefly with main launch file
+```bash
+roslaunch Kinefly main.launch
+```
+
+### 🔄 Running Kinefly + ZMQ Bridge (Two Terminals)
+
+**Terminal 1 - Start Kinefly:**
+```bash
+# Start container
+docker run -it \
+    --privileged \
+    --net=host \
+    --env="DISPLAY" \
+    --env="QT_X11_NO_MITSHM=1" \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    --name kinefly_container \
+    --entrypoint /bin/bash \
+    kinefly
+
+# Inside container - Setup and start Kinefly
+source /opt/ros/kinetic/setup.bash
+source /root/catkin/devel/setup.bash
+export RIG=rhag
+roslaunch Kinefly main.launch
+```
+
+**Terminal 2 - Start ZMQ Bridge:**
+```bash
+# From host machine, open second terminal to same container
+docker exec -it kinefly_container /bin/bash
+
+# Inside container - Setup and start ZMQ bridge
+source /opt/ros/kinetic/setup.bash
+source /root/catkin/devel/setup.bash
+export PYTHONPATH=/root/catkin/src/Kinefly/src:$PYTHONPATH
+cd /root/catkin/src/Kinefly/launch/
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:9871"
+```
+
+### ✅ Verify Everything is Working
+
+**Check ROS topics:**
+```bash
+# In another terminal or same container
+rostopic list | grep kinefly
+rostopic echo /kinefly/flystate --once
+```
+
+**Test ZMQ connection:**
+```bash
+# From host machine
+python3 test_zmq_client.py --zmq-url "tcp://localhost:9871"
+```
+
+**Monitor camera feed:**
+```bash
+# Check camera topics
+rostopic list | grep camera
+rostopic hz /rhag_camera/camera/image_raw
+```
+
+### 🎯 Launch File Options
+
+You can customize the launch with different parameters:
+
+```bash
+# Use specific rig configuration
+roslaunch Kinefly main.launch rig:=rhag
+
+# Use different camera device
+roslaunch Kinefly main.launch camera_device:=/dev/video0
+
+# Combine multiple options
+roslaunch Kinefly main.launch rig:=rhag camera_device:=/dev/video4
+```
+
+### 🐛 Common Issues & Solutions
+
+1. **"Package not found" error:**
+   ```bash
+   # Make sure you sourced the workspace
+   source /root/catkin/devel/setup.bash
+   ```
+
+2. **Camera permission denied:**
+   ```bash
+   # Ensure Docker runs with --privileged flag
+   # Or check camera permissions: ls -la /dev/video*
+   ```
+
+3. **ROS master not found:**
+   ```bash
+   # Check ROS environment
+   echo $ROS_MASTER_URI
+   # Should output: http://localhost:11311
+   ```
+
+4. **No camera detected:**
+   ```bash
+   # List available cameras
+   ls -la /dev/video*
+   # Test camera manually
+   v4l2-ctl --device=/dev/video4 --all
+   ```

@@ -107,10 +107,6 @@ RUN apt-get update && apt-get install -y \
     gedit
 
 
-# Copy our modified launch files
-COPY launch_files/rhag/_main.launch /root/catkin/src/Kinefly/launch/rhag/
-COPY launch_files/rhag/camera_1394.launch /root/catkin/src/Kinefly/launch/rhag/
-
 # Create directory for Kinefly bridge scripts
 RUN mkdir -p /opt/Kinefly_docker
 
@@ -139,5 +135,17 @@ RUN chmod +x /entrypoint.sh
 # Final setup steps
 RUN echo "export RIG=rhag" >> ~/.bashrc
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && source /root/catkin/devel/setup.bash && rosmake Kinefly"
+
+
+# Clean overwrite of launch folder - remove existing and copy new
+RUN rm -rf /root/catkin/src/Kinefly/launch/
+COPY launch/ /root/catkin/src/Kinefly/launch/
+
+# Copy ros_zmq_bridge.py to launch folder as well
+COPY ros_zmq_bridge.py /root/catkin/src/Kinefly/launch/
+
+# Copy the combined startup script
+COPY start_kinefly_with_bridge.sh /opt/Kinefly_docker/
+RUN chmod +x /opt/Kinefly_docker/start_kinefly_with_bridge.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
