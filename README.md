@@ -21,6 +21,32 @@ status            # Check ROS topics and cameras
 test-data         # Test if Kinefly is publishing data
 ```
 
+## Configuration Management
+
+### Quick Configuration Changes
+1. **Edit in container** (recommended for testing):
+   ```bash
+   ./dev-kinefly.sh
+   # Once inside container, edit files:
+   nano /root/kinefly.yaml                    # Kinefly config
+   nano /root/catkin/src/Kinefly/launch/main.launch  # Launch config
+   ```
+
+2. **Copy changes back to host**:
+   ```bash
+   ./copy-config.sh  # Copies all configs from container
+   ```
+
+3. **Rebuild container** to apply changes:
+   ```bash
+   docker build -t kinefly .
+   ```
+
+### Configuration Files
+- `config/kinefly.yaml` - Main Kinefly configuration
+- `launch/` - ROS launch files
+- `config/README.md` - Detailed configuration guide
+
 ## ZMQ Output
 
 Simple JSON format:
@@ -42,12 +68,32 @@ Simple JSON format:
 ✅ **Graceful shutdown** - Ctrl+C stops everything cleanly  
 ✅ **Automatic cleanup** - Handles process management  
 ✅ **Port validation** - Prevents conflicts before starting  
-✅ **Error handling** - Clear error messages and recovery
+✅ **Error handling** - Clear error messages and recovery  
+✅ **Easy configuration** - Edit in container, copy back to host
 
-## Files
+## Project Structure
 
-**Essential files only:**
-- `dev-kinefly.sh` - Host script to start everything
-- `start-kinefly-all.sh` - Container script (all-in-one)
-- `ros_zmq_bridge.py` - Core ZMQ bridge
-- `test_zmq_client.py` - Test ZMQ connection
+```
+Kinefly_docker/
+├── dev-kinefly.sh           # Main startup script
+├── start-kinefly-all.sh     # Container startup script
+├── copy-config.sh           # Copy configs from container
+├── config/                  # Configuration files
+│   ├── kinefly.yaml
+│   └── README.md
+├── launch/                  # ROS launch files
+├── tests/                   # Test files
+│   ├── test_zmq_client.py
+│   ├── test_camera.sh
+│   ├── test_flystate_publisher.py
+│   └── README.md
+├── ros_zmq_bridge.py        # Core ZMQ bridge
+└── Dockerfile               # Container definition
+```
+
+## Testing
+
+Test ZMQ connection:
+```bash
+python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
+```

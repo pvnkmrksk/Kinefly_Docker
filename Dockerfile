@@ -112,8 +112,9 @@ RUN mkdir -p /opt/Kinefly_docker
 
 # Copy essential scripts and files to the container
 COPY ros_zmq_bridge.py /opt/Kinefly_docker/
-COPY test_zmq_client.py /opt/Kinefly_docker/
-COPY test_camera.sh /opt/Kinefly_docker/
+COPY tests/test_zmq_client.py /opt/Kinefly_docker/
+COPY tests/test_camera.sh /opt/Kinefly_docker/
+COPY tests/test_flystate_publisher.py /opt/Kinefly_docker/
 COPY requirements.txt /opt/Kinefly_docker/
 COPY start-kinefly-all.sh /opt/Kinefly_docker/
 RUN chmod +x /opt/Kinefly_docker/start-kinefly-all.sh /opt/Kinefly_docker/test_camera.sh
@@ -125,10 +126,6 @@ RUN apt-get update && apt-get install -y \
     && pip install "click==6.7" "pyzmq==17.1.2" \
     && pip3 install "click==7.0" "pyzmq==18.1.0" \
     && rm -rf /var/lib/apt/lists/*
-
-# Set up the entrypoint
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 # Final setup steps
 RUN echo "export RIG=rhag" >> ~/.bashrc
@@ -155,8 +152,9 @@ RUN echo "" >> ~/.bashrc \
 # Clean overwrite of launch folder - remove existing and copy new
 RUN rm -rf /root/catkin/src/Kinefly/launch/
 COPY launch/ /root/catkin/src/Kinefly/launch/
-COPY kinefly.yaml /root/
+COPY config/kinefly.yaml /root/
 # Copy ros_zmq_bridge.py to launch folder as well
 COPY ros_zmq_bridge.py /root/catkin/src/Kinefly/launch/
 
-ENTRYPOINT ["/entrypoint.sh"]
+# Set default command to bash for interactive use
+CMD ["/bin/bash"]
