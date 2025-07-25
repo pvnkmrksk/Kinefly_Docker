@@ -4,7 +4,6 @@ import os
 import sys
 import json
 import math
-import click
 
 # Debug information
 print("\n=== Debug Information ===")
@@ -55,7 +54,7 @@ import zmq
 
 def process_ros_message(msg, socket_zmq):
     """
-    Process ROS messages from Kinefly and convert to a well-structured format for external applications.
+    Process ROS messages from Kinefly and convert to a simplified format for external applications.
     The message contains left and right wing data in the same message.
     """
     current_time = rospy.get_time()
@@ -64,52 +63,50 @@ def process_ros_message(msg, socket_zmq):
     left_angle = msg.left.angles[0] if msg.left.angles else 0.0
     right_angle = msg.right.angles[0] if msg.right.angles else 0.0
 
-    # Create well-structured message with meaningful headers
+    # Create simplified message with only pose data
     kinefly_data = {
-        "message_info": {
-            "source": "kinefly",
-            "message_type": "wing_tracking",
-            "frame_number": msg.header.seq,
-            "timestamp_ros": current_time,
-            "timestamp_unix": current_time,
-            "frame_id": msg.header.frame_id,
-        },
-        "wing_tracking": {
-            "left_wing": {
-                "angle_radians": left_angle,
-                "angle_degrees": left_angle * 180.0 / 3.14159265359,
-                "beat_frequency_hz": msg.left.freq,
-                "tracking_confidence": msg.left.intensity,
-                "gradient": msg.left.gradients[0] if msg.left.gradients else 0.0,
-            },
-            "right_wing": {
-                "angle_radians": right_angle,
-                "angle_degrees": right_angle * 180.0 / 3.14159265359,
-                "beat_frequency_hz": msg.right.freq,
-                "tracking_confidence": msg.right.intensity,
-                "gradient": msg.right.gradients[0] if msg.right.gradients else 0.0,
-            },
-        },
-        "body_parts": {
-            "head": {
-                "angle_radians": msg.head.angles[0] if msg.head.angles else 0.0,
-                "tracking_confidence": msg.head.intensity,
-                "radius": msg.head.radii[0] if msg.head.radii else 0.0,
-            },
-            "abdomen": {
-                "angle_radians": msg.abdomen.angles[0] if msg.abdomen.angles else 0.0,
-                "tracking_confidence": msg.abdomen.intensity,
-                "radius": msg.abdomen.radii[0] if msg.abdomen.radii else 0.0,
-            },
-        },
-        "legacy_unity_format": {
-            "x": left_angle,  # For backward compatibility with Unity
-            "y": right_angle,
-            "z": 0.0,
-            "yaw": left_angle - right_angle,
-            "pitch": 0.0,
-            "roll": 0.0,
-        },
+        # "message_info": {
+        #     "source": "kinefly",
+        #     "message_type": "wing_tracking",
+        #     "frame_number": msg.header.seq,
+        #     "timestamp_ros": current_time,
+        #     "timestamp_unix": current_time,
+        #     "frame_id": msg.header.frame_id,
+        # },
+        # "wing_tracking": {
+        #     "left_wing": {
+        #         "angle_radians": left_angle,
+        #         "angle_degrees": left_angle * 180.0 / 3.14159265359,
+        #         "beat_frequency_hz": msg.left.freq,
+        #         "tracking_confidence": msg.left.intensity,
+        #         "gradient": msg.left.gradients[0] if msg.left.gradients else 0.0,
+        #     },
+        #     "right_wing": {
+        #         "angle_radians": right_angle,
+        #         "angle_degrees": right_angle * 180.0 / 3.14159265359,
+        #         "beat_frequency_hz": msg.right.freq,
+        #         "tracking_confidence": msg.right.intensity,
+        #         "gradient": msg.right.gradients[0] if msg.right.gradients else 0.0,
+        #     },
+        # },
+        # "body_parts": {
+        #     "head": {
+        #         "angle_radians": msg.head.angles[0] if msg.head.angles else 0.0,
+        #         "tracking_confidence": msg.head.intensity,
+        #         "radius": msg.head.radii[0] if msg.head.radii else 0.0,
+        #     },
+        #     "abdomen": {
+        #         "angle_radians": msg.abdomen.angles[0] if msg.abdomen.angles else 0.0,
+        #         "tracking_confidence": msg.abdomen.intensity,
+        #         "radius": msg.abdomen.radii[0] if msg.abdomen.radii else 0.0,
+        #     },
+        # },
+        "x": left_angle,  # left wing angle
+        "y": right_angle,  # right wing angle
+        "z": 0.0,
+        "yaw": left_angle - right_angle,  # difference between left and right
+        "pitch": 0.0,
+        "roll": 0.0,
     }
 
     try:
@@ -123,15 +120,7 @@ def colored_print(message, color):
     print("{}{}{}".format(color_codes[color], message, color_codes["reset"]))
 
 
-@click.command()
-@click.option("--zmq-url", type=str, default="tcp://*:9871", help="ZMQ binding URL.")
-@click.option(
-    "--topic",
-    type=str,
-    default="/kinefly/flystate",
-    help="Kinefly flystate topic",
-)
-def main(zmq_url, topic):
+def main(zmq_url="tcp://*:9871", topic="/kinefly/flystate"):
     """Bridge between Kinefly ROS topics and ZMQ, maintaining compatibility with existing Unity setup."""
 
     rospy.init_node("kinefly_zmq_bridge", anonymous=True)
@@ -160,4 +149,5 @@ def main(zmq_url, topic):
 
 
 if __name__ == "__main__":
-    main()
+    # Call main function directly with default values
+    main(zmq_url="tcp://*:9871", topic="/kinefly/flystate")

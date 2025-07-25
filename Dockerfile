@@ -110,15 +110,13 @@ RUN apt-get update && apt-get install -y \
 # Create directory for Kinefly bridge scripts
 RUN mkdir -p /opt/Kinefly_docker
 
-# Copy all bridge scripts and configuration files to the container
+# Copy essential scripts and files to the container
 COPY ros_zmq_bridge.py /opt/Kinefly_docker/
-COPY socket_zmq_republisher.py /opt/Kinefly_docker/
 COPY test_zmq_client.py /opt/Kinefly_docker/
 COPY test_camera.sh /opt/Kinefly_docker/
 COPY requirements.txt /opt/Kinefly_docker/
-COPY setup.sh /opt/Kinefly_docker/
-COPY start_bridge.sh /opt/Kinefly_docker/
-RUN chmod +x /opt/Kinefly_docker/setup.sh /opt/Kinefly_docker/start_bridge.sh /opt/Kinefly_docker/test_camera.sh
+COPY start-kinefly-all.sh /opt/Kinefly_docker/
+RUN chmod +x /opt/Kinefly_docker/start-kinefly-all.sh /opt/Kinefly_docker/test_camera.sh
 
 # Install Python dependencies for ZMQ bridge
 RUN apt-get update && apt-get install -y \
@@ -136,16 +134,29 @@ RUN chmod +x /entrypoint.sh
 RUN echo "export RIG=rhag" >> ~/.bashrc
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && source /root/catkin/devel/setup.bash && rosmake Kinefly"
 
+# Enhanced environment setup - Add all necessary environment variables and aliases
+RUN echo "" >> ~/.bashrc \
+    && echo "# === Kinefly Environment Setup ===" >> ~/.bashrc \
+    && echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc \
+    && echo "source /root/catkin/devel/setup.bash" >> ~/.bashrc \
+    && echo "export RIG=rhag" >> ~/.bashrc \
+    && echo "export PYTHONPATH=/root/catkin/src/Kinefly/src:\$PYTHONPATH" >> ~/.bashrc \
+    && echo "" >> ~/.bashrc \
+    && echo "# === Simple Aliases ===" >> ~/.bashrc \
+    && echo "alias kinefly='/opt/Kinefly_docker/start-kinefly-all.sh'" >> ~/.bashrc \
+    && echo "alias status='rostopic list | grep -E \"(kinefly|camera)\"'" >> ~/.bashrc \
+    && echo "alias test-data='rostopic echo /kinefly/flystate --once'" >> ~/.bashrc \
+    && echo "" >> ~/.bashrc \
+    && echo "# Show helpful commands on login" >> ~/.bashrc \
+    && echo "echo '🚀 Kinefly Container Ready!'" >> ~/.bashrc \
+    && echo "echo 'Command: kinefly [PORT] - Start everything (default port 9871)'" >> ~/.bashrc \
+    && echo "echo 'Helpers: status | test-data'" >> ~/.bashrc
 
 # Clean overwrite of launch folder - remove existing and copy new
 RUN rm -rf /root/catkin/src/Kinefly/launch/
 COPY launch/ /root/catkin/src/Kinefly/launch/
-
+COPY kinefly.yaml /root/
 # Copy ros_zmq_bridge.py to launch folder as well
 COPY ros_zmq_bridge.py /root/catkin/src/Kinefly/launch/
-
-# Copy the combined startup script
-COPY start_kinefly_with_bridge.sh /opt/Kinefly_docker/
-RUN chmod +x /opt/Kinefly_docker/start_kinefly_with_bridge.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
