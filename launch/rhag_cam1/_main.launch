@@ -1,0 +1,25 @@
+<launch>
+	<!-- ========================================================== -->
+	<!-- Launch everything needed for Kinefly CAM1, except the      -->
+    <!-- source image streams.                                      -->
+	<!-- ========================================================== -->
+
+    <!-- <include file="$(find Kinefly)/launch/$(env RIG)/params_stimulus.launch" /> -->
+
+    <include file="$(find Kinefly)/launch/$(env RIG)/params_kinefly.launch"                 ns="kinefly_cam1" />
+    <!--<include file="$(find Kinefly)/launch/$(env RIG)/params_ledpanels.launch"               ns="kinefly_cam1" />
+    <include file="$(find Kinefly)/launch/$(env RIG)/params_phidgetsanalog.launch"          ns="kinefly_cam1" />-->
+
+    <!-- Start Kinefly with the correct image topic for camera 1 -->
+    <node name="kinefly_cam1" pkg="Kinefly" type="kinefly.py" required="true" ns="kinefly_cam1">
+        <param name="image_topic" value="/rhag_cam1/camera/image_mono" />
+        <param name="use_gui" value="true" />
+    </node>
+
+    <!--<node name="ledpanels" pkg="ledpanels" type="ledpanels.py" />-->
+    <!--<node name="flystate2ledpanels" pkg="Kinefly" type="flystate2ledpanels.py" ns="kinefly_cam1" />
+    <node name="flystate2phidgetsanalog" pkg="Kinefly" type="flystate2phidgetsanalog.py" ns="kinefly_cam1" />-->
+    
+    
+    
+</launch>

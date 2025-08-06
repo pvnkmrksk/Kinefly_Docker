@@ -117,7 +117,13 @@ COPY tests/test_camera.sh /opt/Kinefly_docker/
 COPY tests/test_flystate_publisher.py /opt/Kinefly_docker/
 COPY requirements.txt /opt/Kinefly_docker/
 COPY start-kinefly-all.sh /opt/Kinefly_docker/
-RUN chmod +x /opt/Kinefly_docker/start-kinefly-all.sh /opt/Kinefly_docker/test_camera.sh
+COPY start-kinefly-cam1.sh /opt/Kinefly_docker/
+COPY start-kinefly-cam2.sh /opt/Kinefly_docker/
+COPY start-kinefly-dual.sh /opt/Kinefly_docker/
+COPY MULTI_CAMERA_SETUP.md /opt/Kinefly_docker/
+RUN chmod +x /opt/Kinefly_docker/start-kinefly-all.sh /opt/Kinefly_docker/test_camera.sh \
+    /opt/Kinefly_docker/start-kinefly-cam1.sh /opt/Kinefly_docker/start-kinefly-cam2.sh \
+    /opt/Kinefly_docker/start-kinefly-dual.sh
 
 # Install Python dependencies for ZMQ bridge
 RUN apt-get update && apt-get install -y \
@@ -141,20 +147,37 @@ RUN echo "" >> ~/.bashrc \
     && echo "" >> ~/.bashrc \
     && echo "# === Simple Aliases ===" >> ~/.bashrc \
     && echo "alias kinefly='/opt/Kinefly_docker/start-kinefly-all.sh'" >> ~/.bashrc \
+    && echo "alias kinefly-cam1='/opt/Kinefly_docker/start-kinefly-cam1.sh'" >> ~/.bashrc \
+    && echo "alias kinefly-cam2='/opt/Kinefly_docker/start-kinefly-cam2.sh'" >> ~/.bashrc \
+    && echo "alias kinefly-dual='/opt/Kinefly_docker/start-kinefly-dual.sh'" >> ~/.bashrc \
     && echo "alias status='rostopic list | grep -E \"(kinefly|camera)\"'" >> ~/.bashrc \
     && echo "alias test-data='rostopic echo /kinefly/flystate --once'" >> ~/.bashrc \
+    && echo "alias test-cam1='rostopic echo /kinefly_cam1/flystate --once'" >> ~/.bashrc \
+    && echo "alias test-cam2='rostopic echo /kinefly_cam2/flystate --once'" >> ~/.bashrc \
     && echo "" >> ~/.bashrc \
     && echo "# Show helpful commands on login" >> ~/.bashrc \
     && echo "echo '🚀 Kinefly Container Ready!'" >> ~/.bashrc \
-    && echo "echo 'Command: kinefly [PORT] - Start everything (default port 9871)'" >> ~/.bashrc \
-    && echo "echo 'Helpers: status | test-data'" >> ~/.bashrc
+    && echo "echo 'Commands:'" >> ~/.bashrc \
+    && echo "echo '  kinefly [PORT]         - Original single camera (default port 9871)'" >> ~/.bashrc \
+    && echo "echo '  kinefly-cam1 [PORT]    - Camera 1 only (default port 9871)'" >> ~/.bashrc \
+    && echo "echo '  kinefly-cam2 [PORT]    - Camera 2 only (default port 9872)'" >> ~/.bashrc \
+    && echo "echo '  kinefly-dual [P1] [P2] - Both cameras (default ports 9871, 9872)'" >> ~/.bashrc \
+    && echo "echo 'Helpers: status | test-data | test-cam1 | test-cam2'" >> ~/.bashrc
 
-# Clean overwrite of launch folder - remove existing and copy new
+# Copy launch configurations and other files - this will automatically include all subdirectories
+# Clean overwrite of launch folder - remove existing and copy new (this copies everything automatically)
 RUN rm -rf /root/catkin/src/Kinefly/launch/
 COPY launch/ /root/catkin/src/Kinefly/launch/
 COPY config/kinefly.yaml /root/
 # Copy ros_zmq_bridge.py to launch folder as well
 COPY ros_zmq_bridge.py /root/catkin/src/Kinefly/launch/
+
+# Create configuration directories for each camera instance to prevent IOError
+RUN mkdir -p /root/kinefly_cam1 /root/kinefly_cam2 \
+    && cp /root/kinefly.yaml /root/kinefly_cam1/kinefly_cam1.yaml \
+    && cp /root/kinefly.yaml /root/kinefly_cam2/kinefly_cam2.yaml \
+    && cp /root/kinefly.png /root/kinefly_cam1/ 2>/dev/null || echo "kinefly.png not found, skipping" \
+    && cp /root/kinefly.png /root/kinefly_cam2/ 2>/dev/null || echo "kinefly.png not found, skipping"
 
 # Set default command to bash for interactive use
 CMD ["/bin/bash"]

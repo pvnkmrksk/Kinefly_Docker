@@ -1,0 +1,25 @@
+<launch>
+    <!-- Camera 1 node -->
+    <node name="camera" pkg="usb_cam" type="usb_cam_node" ns="rhag_cam1" output="screen">
+        <param name="video_device" type="string" value="/dev/video4"/>
+        <param name="width" type="int" value="800"/>
+        <param name="height" type="int" value="600"/>
+        <param name="framerate" type="int" value="120"/>
+        <param name="pixel_format" value="mjpeg"/>
+        <param name="camera_frame_id" value="usb_cam_1"/>
+        <param name="io_method" value="mmap"/>
+
+        <!-- Camera settings -->
+        <param name="brightness" value="64"/>
+        <param name="contrast" value="255"/>
+        <param name="exposure_absolute" value="255"/>
+        <param name="gain" value="30"/>
+        <param name="auto_exposure" value="0"/>
+        <param name="auto_gain" value="0"/>
+        <param name="auto_white_balance" value="0"/>
+    </node>
+
+    <!-- Image processing for mono conversion -->
+    <node name="image_proc" pkg="image_proc" type="image_proc" ns="rhag_cam1/camera"/>
+</launch>
+

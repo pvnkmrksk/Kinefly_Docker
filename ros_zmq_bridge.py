@@ -52,67 +52,100 @@ print("=== End Debug Information ===\n")
 import zmq
 
 
+import time  # Add to top if not already
+
 def process_ros_message(msg, socket_zmq):
     """
     Process ROS messages from Kinefly and convert to a simplified format for external applications.
-    The message contains left and right wing data in the same message.
     """
-    current_time = rospy.get_time()
+    # Get frame number and timestamp from ROS message header
+    frame_number = msg.header.seq
+    # Convert ROS time (seconds + nanoseconds) to Unix timestamp
+    ros_time_seconds = msg.header.stamp.secs + msg.header.stamp.nsecs / 1e9
+    unix_timestamp = ros_time_seconds
 
-    # Get the first angle from the arrays if available, otherwise use 0.0
     left_angle = msg.left.angles[0] if msg.left.angles else 0.0
     right_angle = msg.right.angles[0] if msg.right.angles else 0.0
 
-    # Create simplified message with only pose data
     kinefly_data = {
-        # "message_info": {
-        #     "source": "kinefly",
-        #     "message_type": "wing_tracking",
-        #     "frame_number": msg.header.seq,
-        #     "timestamp_ros": current_time,
-        #     "timestamp_unix": current_time,
-        #     "frame_id": msg.header.frame_id,
-        # },
-        # "wing_tracking": {
-        #     "left_wing": {
-        #         "angle_radians": left_angle,
-        #         "angle_degrees": left_angle * 180.0 / 3.14159265359,
-        #         "beat_frequency_hz": msg.left.freq,
-        #         "tracking_confidence": msg.left.intensity,
-        #         "gradient": msg.left.gradients[0] if msg.left.gradients else 0.0,
-        #     },
-        #     "right_wing": {
-        #         "angle_radians": right_angle,
-        #         "angle_degrees": right_angle * 180.0 / 3.14159265359,
-        #         "beat_frequency_hz": msg.right.freq,
-        #         "tracking_confidence": msg.right.intensity,
-        #         "gradient": msg.right.gradients[0] if msg.right.gradients else 0.0,
-        #     },
-        # },
-        # "body_parts": {
-        #     "head": {
-        #         "angle_radians": msg.head.angles[0] if msg.head.angles else 0.0,
-        #         "tracking_confidence": msg.head.intensity,
-        #         "radius": msg.head.radii[0] if msg.head.radii else 0.0,
-        #     },
-        #     "abdomen": {
-        #         "angle_radians": msg.abdomen.angles[0] if msg.abdomen.angles else 0.0,
-        #         "tracking_confidence": msg.abdomen.intensity,
-        #         "radius": msg.abdomen.radii[0] if msg.abdomen.radii else 0.0,
-        #     },
-        # },
-        "x": left_angle,  # left wing angle
-        "y": right_angle,  # right wing angle
+        "x": left_angle,
+        "y": right_angle,
         "z": 0.0,
-        "yaw": left_angle - right_angle,  # difference between left and right
+        "yaw": left_angle - right_angle,
         "pitch": 0.0,
         "roll": 0.0,
+        # Use frame number and timestamp from message header
+        "frame_number": frame_number,
+        "timestamp_unix": unix_timestamp,
     }
 
     try:
         socket_zmq.send_string(json.dumps(kinefly_data))
     except Exception as e:
         rospy.logerr("Failed to send data over ZMQ. Error: {}".format(e))
+
+
+# def process_ros_message(msg, socket_zmq):
+#     """
+#     Process ROS messages from Kinefly and convert to a simplified format for external applications.
+#     The message contains left and right wing data in the same message.
+#     """
+#     current_time = rospy.get_time()
+
+#     # Get the first angle from the arrays if available, otherwise use 0.0
+#     left_angle = msg.left.angles[0] if msg.left.angles else 0.0
+#     right_angle = msg.right.angles[0] if msg.right.angles else 0.0
+
+#     # Create simplified message with only pose data
+#     kinefly_data = {
+#         # "message_info": {
+#         #     "source": "kinefly",
+#         #     "message_type": "wing_tracking",
+#         #     "frame_number": msg.header.seq,
+#         #     "timestamp_ros": current_time,
+#         #     "timestamp_unix": current_time,
+#         #     "frame_id": msg.header.frame_id,
+#         # },
+#         # "wing_tracking": {
+#         #     "left_wing": {
+#         #         "angle_radians": left_angle,
+#         #         "angle_degrees": left_angle * 180.0 / 3.14159265359,
+#         #         "beat_frequency_hz": msg.left.freq,
+#         #         "tracking_confidence": msg.left.intensity,
+#         #         "gradient": msg.left.gradients[0] if msg.left.gradients else 0.0,
+#         #     },
+#         #     "right_wing": {
+#         #         "angle_radians": right_angle,
+#         #         "angle_degrees": right_angle * 180.0 / 3.14159265359,
+#         #         "beat_frequency_hz": msg.right.freq,
+#         #         "tracking_confidence": msg.right.intensity,
+#         #         "gradient": msg.right.gradients[0] if msg.right.gradients else 0.0,
+#         #     },
+#         # },
+#         # "body_parts": {
+#         #     "head": {
+#         #         "angle_radians": msg.head.angles[0] if msg.head.angles else 0.0,
+#         #         "tracking_confidence": msg.head.intensity,
+#         #         "radius": msg.head.radii[0] if msg.head.radii else 0.0,
+#         #     },
+#         #     "abdomen": {
+#         #         "angle_radians": msg.abdomen.angles[0] if msg.abdomen.angles else 0.0,
+#         #         "tracking_confidence": msg.abdomen.intensity,
+#         #         "radius": msg.abdomen.radii[0] if msg.abdomen.radii else 0.0,
+#         #     },
+#         # },
+#         "x": left_angle,  # left wing angle
+#         "y": right_angle,  # right wing angle
+#         "z": 0.0,
+#         "yaw": left_angle - right_angle,  # difference between left and right
+#         "pitch": 0.0,
+#         "roll": 0.0,
+#     }
+
+#     try:
+#         socket_zmq.send_string(json.dumps(kinefly_data))
+#     except Exception as e:
+#         rospy.logerr("Failed to send data over ZMQ. Error: {}".format(e))
 
 
 def colored_print(message, color):
