@@ -129,7 +129,7 @@ RUN chmod +x /opt/Kinefly_docker/start-kinefly-all.sh /opt/Kinefly_docker/test_c
 RUN apt-get update && apt-get install -y \
     python-pip \
     python3-pip \
-    && pip install "click==6.7" "pyzmq==17.1.2" \
+    && pip install "click==6.7" "pyzmq==17.1.2" "rospkg==1.1.10" \
     && pip3 install "click==7.0" "pyzmq==18.1.0" \
     && rm -rf /var/lib/apt/lists/*
 
