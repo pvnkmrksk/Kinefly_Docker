@@ -99,7 +99,7 @@ echo -e "${YELLOW}⏳ Waiting for Kinefly Camera 1 topic...${NC}"
 timeout=30
 counter=0
 while [ $counter -lt $timeout ]; do
-    if rostopic list 2>/dev/null | grep -q "/kinefly_cam1/flystate"; then
+    if rostopic list 2>/dev/null | grep -q "/kinefly_cam1/kinefly_cam1/flystate"; then
         break
     fi
     sleep 1
@@ -116,12 +116,7 @@ echo -e "${GREEN}🌉 Starting ZMQ Bridge Camera 1 on port ${PORT}...${NC}"
 
 # Start ZMQ bridge in background
 cd /root/catkin/src/Kinefly/launch/
-python2 -c "
-import sys
-sys.path.append('/root/catkin/src/Kinefly/launch')
-from ros_zmq_bridge import main
-main(zmq_url='tcp://*:${PORT}', topic='/kinefly_cam1/flystate')
-" > /tmp/zmq_bridge_cam1.log 2>&1 &
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:${PORT}" --topic "/kinefly_cam1/kinefly_cam1/flystate" > /tmp/zmq_bridge_cam1.log 2>&1 &
 BRIDGE_PID=$!
 
 # Wait for bridge to start
@@ -140,7 +135,7 @@ echo -e "${BLUE}📊 Status:${NC}"
 echo -e "  Kinefly PID: ${KINEFLY_PID}"
 echo -e "  Bridge PID:  ${BRIDGE_PID}"
 echo -e "  ZMQ Port:    ${PORT}"
-echo -e "  Topic:       /kinefly_cam1/flystate"
+echo -e "  Topic:       /kinefly_cam1/kinefly_cam1/flystate"
 echo -e "  Video:       /dev/video4"
 echo
 

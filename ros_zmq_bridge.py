@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import math
+import argparse
 
 # Debug information
 print("\n=== Debug Information ===")
@@ -53,6 +54,7 @@ import zmq
 
 
 import time  # Add to top if not already
+
 
 def process_ros_message(msg, socket_zmq):
     """
@@ -118,7 +120,6 @@ def process_ros_message(msg, socket_zmq):
 #         #         "angle_radians": right_angle,
 #         #         "angle_degrees": right_angle * 180.0 / 3.14159265359,
 #         #         "beat_frequency_hz": msg.right.freq,
-#         #         "tracking_confidence": msg.right.intensity,
 #         #         "gradient": msg.right.gradients[0] if msg.right.gradients else 0.0,
 #         #     },
 #         # },
@@ -182,5 +183,20 @@ def main(zmq_url="tcp://*:9871", topic="/kinefly/flystate"):
 
 
 if __name__ == "__main__":
-    # Call main function directly with default values
-    main(zmq_url="tcp://*:9871", topic="/kinefly/flystate")
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Kinefly ROS to ZMQ Bridge")
+    parser.add_argument(
+        "--zmq-url",
+        default="tcp://*:9871",
+        help="ZMQ URL to bind to (default: tcp://*:9871)",
+    )
+    parser.add_argument(
+        "--topic",
+        default="/kinefly/flystate",
+        help="ROS topic to subscribe to (default: /kinefly/flystate)",
+    )
+
+    args = parser.parse_args()
+
+    # Call main function with parsed arguments
+    main(zmq_url=args.zmq_url, topic=args.topic)

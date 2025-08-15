@@ -77,14 +77,14 @@ kinefly-dual [CAM1_PORT] [CAM2_PORT]
 - **Video Device**: `/dev/video4`
 - **ROS Namespace**: `kinefly_cam1`
 - **Camera Namespace**: `rhag_cam1`
-- **Topic**: `/kinefly_cam1/flystate`
+- **Topic**: `/kinefly_cam1/kinefly_cam1/flystate`
 - **Default ZMQ Port**: `9871`
 
 ### Camera 2 (`rhag_cam2`)
 - **Video Device**: `/dev/video6`
 - **ROS Namespace**: `kinefly_cam2`
 - **Camera Namespace**: `rhag_cam2`
-- **Topic**: `/kinefly_cam2/flystate`
+- **Topic**: `/kinefly_cam2/kinefly_cam2/flystate`
 - **Default ZMQ Port**: `9872`
 
 ## Dual Camera Startup Sequence
@@ -118,12 +118,12 @@ When both cameras are running, you'll see these topics:
 
 ```bash
 # Camera 1 topics
-/kinefly_cam1/flystate
+/kinefly_cam1/kinefly_cam1/flystate
 /rhag_cam1/camera/image_raw
 /rhag_cam1/camera/image_mono
 
 # Camera 2 topics
-/kinefly_cam2/flystate
+/kinefly_cam2/kinefly_cam2/flystate
 /rhag_cam2/camera/image_raw
 /rhag_cam2/camera/image_mono
 ```

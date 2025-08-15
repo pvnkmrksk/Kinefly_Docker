@@ -105,7 +105,7 @@ fi
 timeout=30
 counter=0
 while [ $counter -lt $timeout ]; do
-    if rostopic list 2>/dev/null | grep -q "/kinefly_cam1/flystate"; then
+    if rostopic list 2>/dev/null | grep -q "/kinefly_cam1/kinefly_cam1/flystate"; then
         break
     fi
     sleep 1
@@ -121,12 +121,7 @@ fi
 echo -e "${GREEN}✅ Camera 1 ready! Starting ZMQ Bridge...${NC}"
 # Start Camera 1 ZMQ bridge
 cd /root/catkin/src/Kinefly/launch/
-python2 -c "
-import sys
-sys.path.append('/root/catkin/src/Kinefly/launch')
-from ros_zmq_bridge import main
-main(zmq_url='tcp://*:${CAM1_PORT}', topic='/kinefly_cam1/flystate')
-" > /tmp/zmq_bridge_cam1.log 2>&1 &
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:${CAM1_PORT}" --topic "/kinefly_cam1/kinefly_cam1/flystate" > /tmp/zmq_bridge_cam1.log 2>&1 &
 CAM1_BRIDGE_PID=$!
 CAM1_PIDS+=($CAM1_BRIDGE_PID)
 
@@ -154,7 +149,7 @@ fi
 # Wait for Camera 2 topic
 counter=0
 while [ $counter -lt $timeout ]; do
-    if rostopic list 2>/dev/null | grep -q "/kinefly_cam2/flystate"; then
+    if rostopic list 2>/dev/null | grep -q "/kinefly_cam2/kinefly_cam2/flystate"; then
         break
     fi
     sleep 1
@@ -163,18 +158,12 @@ done
 
 if [ $counter -eq $timeout ]; then
     echo -e "${RED}❌ Camera 2 topic not found${NC}"
-    cleanup
     exit 1
 fi
 
 echo -e "${GREEN}✅ Camera 2 ready! Starting ZMQ Bridge...${NC}"
 # Start Camera 2 ZMQ bridge
-python2 -c "
-import sys
-sys.path.append('/root/catkin/src/Kinefly/launch')
-from ros_zmq_bridge import main
-main(zmq_url='tcp://*:${CAM2_PORT}', topic='/kinefly_cam2/flystate')
-" > /tmp/zmq_bridge_cam2.log 2>&1 &
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:${CAM2_PORT}" --topic "/kinefly_cam2/kinefly_cam2/flystate" > /tmp/zmq_bridge_cam2.log 2>&1 &
 CAM2_BRIDGE_PID=$!
 CAM2_PIDS+=($CAM2_BRIDGE_PID)
 
@@ -182,8 +171,8 @@ sleep 2
 
 echo -e "${GREEN}🎉 Both cameras are running!${NC}"
 echo -e "${BLUE}📊 Status:${NC}"
-echo -e "  Camera 1: /dev/video4 → tcp://*:${CAM1_PORT} → /kinefly_cam1/flystate"
-echo -e "  Camera 2: /dev/video6 → tcp://*:${CAM2_PORT} → /kinefly_cam2/flystate"
+echo -e "  Camera 1: /dev/video4 → tcp://*:${CAM1_PORT} → /kinefly_cam1/kinefly_cam1/flystate"
+echo -e "  Camera 2: /dev/video6 → tcp://*:${CAM2_PORT} → /kinefly_cam2/kinefly_cam2/flystate"
 echo -e "  Kinefly PIDs: ${CAM1_KINEFLY_PID}, ${CAM2_KINEFLY_PID}"
 echo -e "  Bridge PIDs:  ${CAM1_BRIDGE_PID}, ${CAM2_BRIDGE_PID}"
 echo

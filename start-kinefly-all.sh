@@ -117,12 +117,7 @@ echo -e "${GREEN}🌉 Starting ZMQ Bridge on port ${PORT}...${NC}"
 
 # Start ZMQ bridge in background
 cd /root/catkin/src/Kinefly/launch/
-python2 -c "
-import sys
-sys.path.append('/root/catkin/src/Kinefly/launch')
-from ros_zmq_bridge import main
-main(zmq_url='tcp://*:${PORT}', topic='/kinefly/flystate')
-" > /tmp/zmq_bridge.log 2>&1 &
+python2 ros_zmq_bridge.py --zmq-url "tcp://*:${PORT}" --topic "/kinefly/flystate" > /tmp/zmq_bridge.log 2>&1 &
 BRIDGE_PID=$!
 
 # Wait for bridge to start
