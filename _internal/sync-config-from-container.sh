@@ -30,8 +30,8 @@ fi
 
 echo -e "${YELLOW}📋 Syncing configurations from container to host (on exit)...${NC}"
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the directory where this script is located (go up one level from _internal/)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Create backup directory
 BACKUP_DIR="$SCRIPT_DIR/config/backup/$(date +%Y%m%d_%H%M%S)"
@@ -59,10 +59,20 @@ else
     echo -e "${YELLOW}⚠️  Could not copy kinefly.yaml${NC}"
 fi
 
-# Copy ros_zmq_bridge.py if it exists
+# Copy VR-specific YAML files (VR1/VR1.yaml, VR2/VR2.yaml, etc.)
+for vr in VR1 VR2 VR3 VR4; do
+    if docker cp "$CONTAINER_NAME:/root/${vr}/${vr}.yaml" "$BACKUP_DIR/${vr}.yaml" 2>/dev/null; then
+        # Create VR directory in config if it doesn't exist
+        mkdir -p "$SCRIPT_DIR/config/${vr}"
+        cp "$BACKUP_DIR/${vr}.yaml" "$SCRIPT_DIR/config/${vr}/${vr}.yaml" 2>/dev/null || true
+    fi
+done
+
+# Copy ros_zmq_bridge.py if it exists (to _internal/)
 echo -e "${GREEN}🌉 Copying ZMQ bridge...${NC}"
 if docker cp "$CONTAINER_NAME:/root/catkin/src/Kinefly/launch/ros_zmq_bridge.py" "$BACKUP_DIR/" 2>/dev/null; then
-    cp "$BACKUP_DIR/ros_zmq_bridge.py" "$SCRIPT_DIR/ros_zmq_bridge.py" 2>/dev/null || true
+    mkdir -p "$SCRIPT_DIR/_internal" 2>/dev/null || true
+    cp "$BACKUP_DIR/ros_zmq_bridge.py" "$SCRIPT_DIR/_internal/ros_zmq_bridge.py" 2>/dev/null || true
 else
     echo -e "${YELLOW}⚠️  Could not copy ros_zmq_bridge.py${NC}"
 fi

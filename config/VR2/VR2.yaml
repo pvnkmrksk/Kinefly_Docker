@@ -1,0 +1,49 @@
+abdomen:
+  angle_hi: 3.927
+  angle_lo: 2.3562
+  hinge: {x: 301.0, y: 157.0}
+  radius_inner: 100.0
+  radius_outer: 120.0
+  stabilize: false
+  subtract_bg: false
+  track: false
+aux:
+  angle: 0.0
+  center: {x: 350.0, y: 150.0}
+  radius1: 30.0
+  radius2: 20.0
+  subtract_bg: false
+  track: false
+axis:
+  pt1: {x: 310, y: 150}
+  pt2: {x: 310, y: 250}
+  track: false
+head:
+  angle_hi: 0.7854
+  angle_lo: -0.7854
+  hinge: {x: 302.0, y: 319.0}
+  radius_inner: 50.0
+  radius_outer: 80.0
+  stabilize: false
+  subtract_bg: false
+  track: false
+left:
+  angle_hi: -0.7854
+  angle_lo: -2.3562
+  hinge: {x: 351.4990474285334, y: 237.69136390476177}
+  radius_inner: 50.0
+  radius_outer: 80.0
+  stabilize: false
+  subtract_bg: false
+  track: true
+right:
+  angle_hi: 2.3562
+  angle_lo: 0.7854
+  hinge: {x: 251.50095257146683, y: 238.3086360952379}
+  radius_inner: 50.0
+  radius_outer: 80.0
+  stabilize: false
+  subtract_bg: false
+  track: true
+symmetric: true
+windows: false
