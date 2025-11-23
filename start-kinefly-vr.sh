@@ -102,8 +102,12 @@ start_vr() {
     echo "${bridge_pid}" >> /tmp/kinefly_vr_pids.txt
 }
 
+# Global flag to exit monitoring loop
+CLEANUP_REQUESTED=0
+
 # Function to cleanup processes
 cleanup() {
+    CLEANUP_REQUESTED=1
     echo -e "\n${YELLOW}🛑 Shutting down...${NC}"
     
     # Kill all stored PIDs
@@ -119,11 +123,10 @@ cleanup() {
     # Clean up any remaining ROS processes
     pkill -f "roslaunch.*Kinefly" 2>/dev/null
     pkill -f "ros_zmq_bridge" 2>/dev/null
-    pkill -f "rosmaster" 2>/dev/null
-    pkill -f "roscore" 2>/dev/null
+    # Don't kill rosmaster/roscore - let it stay running for debugging
     
     echo -e "${GREEN}✅ Cleanup complete${NC}"
-    exit 0
+    # Don't exit - let monitoring loop check CLEANUP_REQUESTED and break
 }
 
 # Set up signal handlers
@@ -154,21 +157,23 @@ else
     start_vr $VR_NUMBER $CUSTOM_PORT
 fi
 
-echo -e "${YELLOW}⏹️  Press Ctrl+C to stop everything${NC}"
+echo -e "${YELLOW}⏹️  Press Ctrl+C to stop everything and drop to console${NC}"
 echo
 
 # Monitor processes
-while true; do
+while [ $CLEANUP_REQUESTED -eq 0 ]; do
     # Check if any process died
     if [ -f /tmp/kinefly_vr_pids.txt ]; then
         while read pid; do
             if [ ! -z "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
                 echo -e "${RED}❌ Process ${pid} stopped unexpectedly${NC}"
                 cleanup
-                exit 1
+                break 2  # Break out of both loops
             fi
         done < /tmp/kinefly_vr_pids.txt
     fi
     sleep 5
 done
+
+# Script ends here - caller (dev-kinefly-vr.sh) will drop to console
 
