@@ -46,11 +46,26 @@ start_vr() {
     
     echo -e "${BLUE}🚀 Starting ${vr_name} (Port: ${port})${NC}"
     
-    # Set RIG environment variable
+    # Create directory for VR config files (kinefly.py writes to /root/VR1/VR1.yaml, etc.)
+    mkdir -p /root/${vr_name}
+    
+    # Unset any existing RIG variable and set it explicitly for this VR
+    # This prevents inheritance from .bashrc or other sources (like "rhag")
+    unset RIG
     export RIG=$vr_name
     
+    # Verify RIG is set correctly
+    if [ "$RIG" != "$vr_name" ]; then
+        echo -e "${RED}❌ Failed to set RIG environment variable${NC}"
+        echo -e "${RED}   Expected: $vr_name, Got: $RIG${NC}"
+        return 1
+    fi
+    
+    echo -e "${YELLOW}   RIG environment variable set to: $RIG${NC}"
+    
     # Start Kinefly for this VR
-    roslaunch Kinefly main.launch > /tmp/kinefly_${vr_name}.log 2>&1 &
+    # Explicitly pass RIG in the environment to ensure it's available to roslaunch
+    RIG=$vr_name roslaunch Kinefly main.launch > /tmp/kinefly_${vr_name}.log 2>&1 &
     local kinefly_pid=$!
     
     # Wait for ROS to initialize

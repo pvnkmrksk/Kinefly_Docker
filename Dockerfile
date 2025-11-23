@@ -150,7 +150,6 @@ RUN echo "" >> ~/.bashrc \
     && echo "" >> ~/.bashrc \
     && echo "# === Simple Aliases ===" >> ~/.bashrc \
     && echo "alias kinefly='/opt/Kinefly_docker/kinefly'" >> ~/.bashrc \
-    && echo "alias kinefly='/opt/Kinefly_docker/start-kinefly-all.sh'" >> ~/.bashrc \
     && echo "alias kinefly-cam1='/opt/Kinefly_docker/start-kinefly-cam1.sh'" >> ~/.bashrc \
     && echo "alias kinefly-cam2='/opt/Kinefly_docker/start-kinefly-cam2.sh'" >> ~/.bashrc \
     && echo "alias kinefly-dual='/opt/Kinefly_docker/start-kinefly-dual.sh'" >> ~/.bashrc \
