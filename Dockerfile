@@ -117,16 +117,9 @@ COPY tests/test_camera.sh /opt/Kinefly_docker/
 COPY tests/test_flystate_publisher.py /opt/Kinefly_docker/
 COPY requirements.txt /opt/Kinefly_docker/
 COPY kinefly /opt/Kinefly_docker/
-COPY start-kinefly-vr.sh /opt/Kinefly_docker/
-COPY start-kinefly-all.sh /opt/Kinefly_docker/
-COPY start-kinefly-cam1.sh /opt/Kinefly_docker/
-COPY start-kinefly-cam2.sh /opt/Kinefly_docker/
-COPY start-kinefly-dual.sh /opt/Kinefly_docker/
+COPY _internal/ /opt/Kinefly_docker/
 COPY MULTI_CAMERA_SETUP.md /opt/Kinefly_docker/
-RUN chmod +x /opt/Kinefly_docker/kinefly /opt/Kinefly_docker/start-kinefly-vr.sh \
-    /opt/Kinefly_docker/start-kinefly-all.sh /opt/Kinefly_docker/test_camera.sh \
-    /opt/Kinefly_docker/start-kinefly-cam1.sh /opt/Kinefly_docker/start-kinefly-cam2.sh \
-    /opt/Kinefly_docker/start-kinefly-dual.sh
+RUN chmod +x /opt/Kinefly_docker/kinefly /opt/Kinefly_docker/*.sh /opt/Kinefly_docker/test_camera.sh 2>/dev/null || true
 
 # Install Python dependencies for ZMQ bridge
 RUN apt-get update && apt-get install -y \

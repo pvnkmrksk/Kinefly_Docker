@@ -122,12 +122,10 @@ else
     
     # Function to sync configs on exit
     cleanup_and_sync() {
-        echo -e "\n${YELLOW}🔄 Syncing configurations from container to host (on exit)...${NC}"
-        "$SCRIPT_DIR/sync-config-from-container.sh" "$CONTAINER_NAME"
+        "$SCRIPT_DIR/sync-config-from-container.sh" "$CONTAINER_NAME" > /dev/null 2>&1
         # Stop and remove container
         docker stop "$CONTAINER_NAME" > /dev/null 2>&1
         docker rm "$CONTAINER_NAME" > /dev/null 2>&1
-        echo -e "${GREEN}✅ Cleanup complete${NC}"
     }
     
     # Set up trap to sync on exit
@@ -140,32 +138,30 @@ else
     docker rm -f ${CONTAINER_NAME} > /dev/null 2>&1
     
     # Start container in background first
-    echo -e "${YELLOW}🚀 Starting container...${NC}"
     docker run -d \
         --privileged \
         --net=host \
         --env="DISPLAY=${DISPLAY:-:0}" \
         --env="QT_X11_NO_MITSHM=1" \
         --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-        --volume="$(pwd)/start-kinefly-vr.sh:/opt/Kinefly_docker/start-kinefly-vr.sh:ro" \
+        --volume="$(pwd)/_internal/start-kinefly-vr.sh:/opt/Kinefly_docker/start-kinefly-vr.sh:ro" \
         --name ${CONTAINER_NAME} \
         kinefly \
         sleep infinity > /dev/null 2>&1
     
     # Wait for container to be ready
-    sleep 2
+    sleep 0.5
     
     # Sync configurations FROM host TO container at startup
-    echo -e "${YELLOW}📋 Syncing configurations from host to container (at startup)...${NC}"
-    "$SCRIPT_DIR/sync-config-to-container.sh" "$CONTAINER_NAME"
+    "$SCRIPT_DIR/sync-config-to-container.sh" "$CONTAINER_NAME" > /dev/null 2>&1
     
     # Copy this script into container so it can be called recursively
     docker cp "$0" "${CONTAINER_NAME}:/opt/Kinefly_docker/kinefly" > /dev/null 2>&1
-    docker exec ${CONTAINER_NAME} chmod +x /opt/Kinefly_docker/kinefly
+    docker exec ${CONTAINER_NAME} chmod +x /opt/Kinefly_docker/kinefly 2>/dev/null || true
+    # Note: start-kinefly-vr.sh is mounted as volume, so permissions come from host file
     
     # Now exec into container and run the script
     # The script will drop to bash console after it exits (success or failure)
-    echo -e "${GREEN}✅ Configurations synced. Starting Kinefly VR...${NC}"
     # Use -it if TTY is available, otherwise use -i
     # Build command with proper argument handling
     CMD="/opt/Kinefly_docker/kinefly"
