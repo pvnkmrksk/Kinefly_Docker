@@ -106,40 +106,60 @@ start_vr() {
     
     echo -e "${GREEN}✅ ${vr_name} running (Port: ${port})${NC}"
     
-    # Store PIDs for cleanup
-    echo "${kinefly_pid}" >> /tmp/kinefly_vr_pids.txt
-    echo "${bridge_pid}" >> /tmp/kinefly_vr_pids.txt
+    # Store PIDs with VR name for isolated cleanup
+    echo "${vr_name}:${kinefly_pid}:${bridge_pid}" >> /tmp/kinefly_vr_pids.txt
 }
 
 # Global flag to exit monitoring loop
 CLEANUP_REQUESTED=0
 
-# Function to cleanup processes
-cleanup() {
-    CLEANUP_REQUESTED=1
-    echo -e "\n${YELLOW}🛑 Shutting down...${NC}"
+# Function to cleanup a specific VR
+cleanup_vr() {
+    local vr_name=$1
+    local kinefly_pid=$2
+    local bridge_pid=$3
     
-    # Kill all stored PIDs
+    echo -e "${YELLOW}🛑 Shutting down ${vr_name}...${NC}"
+    
+    # Kill only this VR's processes
+    if [ ! -z "$kinefly_pid" ] && kill -0 "$kinefly_pid" 2>/dev/null; then
+        echo -e "${YELLOW}   Stopping ${vr_name} Kinefly (PID: $kinefly_pid)${NC}"
+        kill "$kinefly_pid" 2>/dev/null
+        wait "$kinefly_pid" 2>/dev/null || true
+    fi
+    
+    if [ ! -z "$bridge_pid" ] && kill -0 "$bridge_pid" 2>/dev/null; then
+        echo -e "${YELLOW}   Stopping ${vr_name} ZMQ Bridge (PID: $bridge_pid)${NC}"
+        kill "$bridge_pid" 2>/dev/null
+        wait "$bridge_pid" 2>/dev/null || true
+    fi
+    
+    # Kill only this VR's roslaunch (by namespace)
+    pkill -f "roslaunch.*${vr_name}" 2>/dev/null || true
+    
+    echo -e "${GREEN}✅ ${vr_name} stopped${NC}"
+}
+
+# Function to cleanup all processes (on Ctrl+C or script exit)
+cleanup_all() {
+    CLEANUP_REQUESTED=1
+    echo -e "\n${YELLOW}🛑 Shutting down all VRs...${NC}"
+    
+    # Kill all stored VRs individually
     if [ -f /tmp/kinefly_vr_pids.txt ]; then
-        while read pid; do
-            if [ ! -z "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-                kill "$pid" 2>/dev/null
+        while IFS=':' read -r vr_name kinefly_pid bridge_pid; do
+            if [ ! -z "$vr_name" ]; then
+                cleanup_vr "$vr_name" "$kinefly_pid" "$bridge_pid"
             fi
         done < /tmp/kinefly_vr_pids.txt
         rm -f /tmp/kinefly_vr_pids.txt
     fi
     
-    # Clean up any remaining ROS processes
-    pkill -f "roslaunch.*Kinefly" 2>/dev/null
-    pkill -f "ros_zmq_bridge" 2>/dev/null
-    # Don't kill rosmaster/roscore - let it stay running for debugging
-    
-    echo -e "${GREEN}✅ Cleanup complete${NC}"
-    # Don't exit - let monitoring loop check CLEANUP_REQUESTED and break
+    echo -e "${GREEN}✅ All VRs stopped${NC}"
 }
 
 # Set up signal handlers
-trap cleanup SIGINT SIGTERM
+trap cleanup_all SIGINT SIGTERM
 
 # Initialize PID file
 rm -f /tmp/kinefly_vr_pids.txt
@@ -165,18 +185,47 @@ fi
 
 # Monitor processes
 while [ $CLEANUP_REQUESTED -eq 0 ]; do
-    # Check if any process died
+    # Check if any process died (isolated per VR)
     if [ -f /tmp/kinefly_vr_pids.txt ]; then
-        while read pid; do
-            if [ ! -z "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
-                echo -e "${RED}❌ Process ${pid} stopped unexpectedly${NC}"
-                cleanup
-                break 2  # Break out of both loops
+        # Create temp file for remaining PIDs
+        temp_file=$(mktemp)
+        
+        while IFS=':' read -r vr_name kinefly_pid bridge_pid; do
+            if [ -z "$vr_name" ]; then
+                continue
+            fi
+            
+            vr_failed=false
+            
+            # Check Kinefly process
+            if [ ! -z "$kinefly_pid" ] && ! kill -0 "$kinefly_pid" 2>/dev/null; then
+                echo -e "${RED}❌ ${vr_name} Kinefly (PID: $kinefly_pid) stopped unexpectedly${NC}"
+                vr_failed=true
+            fi
+            
+            # Check Bridge process
+            if [ ! -z "$bridge_pid" ] && ! kill -0 "$bridge_pid" 2>/dev/null; then
+                echo -e "${RED}❌ ${vr_name} ZMQ Bridge (PID: $bridge_pid) stopped unexpectedly${NC}"
+                vr_failed=true
+            fi
+            
+            if [ "$vr_failed" = true ]; then
+                # Clean up only this VR, don't kill others
+                cleanup_vr "$vr_name" "$kinefly_pid" "$bridge_pid"
+                echo -e "${YELLOW}⚠️  ${vr_name} stopped, but other VRs continue running${NC}"
+            else
+                # VR is still running, keep it in the list
+                echo "${vr_name}:${kinefly_pid}:${bridge_pid}" >> "$temp_file"
             fi
         done < /tmp/kinefly_vr_pids.txt
+        
+        # Replace PID file with remaining VRs
+        mv "$temp_file" /tmp/kinefly_vr_pids.txt 2>/dev/null || true
     fi
     sleep 2
 done
+
+echo -e "${GREEN}✅ Monitoring stopped${NC}"
 
 # Script ends here - caller (dev-kinefly-vr.sh) will drop to console
 

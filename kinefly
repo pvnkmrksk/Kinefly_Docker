@@ -122,10 +122,12 @@ else
     
     # Function to sync configs on exit
     cleanup_and_sync() {
-        "$SCRIPT_DIR/_internal/sync-config-from-container.sh" "$CONTAINER_NAME" > /dev/null 2>&1
-        # Stop and remove container
+        echo -e "\n${YELLOW}🔄 Syncing configurations from container to host...${NC}"
+        "$SCRIPT_DIR/_internal/sync-config-from-container.sh" "$CONTAINER_NAME"
+        echo -e "${YELLOW}🛑 Stopping container...${NC}"
         docker stop "$CONTAINER_NAME" > /dev/null 2>&1
         docker rm "$CONTAINER_NAME" > /dev/null 2>&1
+        echo -e "${GREEN}✅ Container stopped and removed${NC}"
     }
     
     # Set up trap to sync on exit

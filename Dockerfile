@@ -110,13 +110,6 @@ RUN apt-get update && apt-get install -y \
 # Create directory for Kinefly bridge scripts
 RUN mkdir -p /opt/Kinefly_docker
 
-# Copy essential scripts and files to the container
-COPY tests/test_zmq_client.py /opt/Kinefly_docker/
-COPY tests/test_camera.sh /opt/Kinefly_docker/
-COPY tests/test_flystate_publisher.py /opt/Kinefly_docker/
-COPY kinefly /opt/Kinefly_docker/
-COPY _internal/ /opt/Kinefly_docker/
-RUN chmod +x /opt/Kinefly_docker/kinefly /opt/Kinefly_docker/*.sh /opt/Kinefly_docker/test_camera.sh 2>/dev/null || true
 
 # Install Python dependencies for ZMQ bridge
 RUN apt-get update && apt-get install -y \
@@ -125,6 +118,15 @@ RUN apt-get update && apt-get install -y \
     && pip install "click==6.7" "pyzmq==17.1.2" \
     && pip3 install "click==7.0" "pyzmq==18.1.0" \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy essential scripts and files to the container
+COPY tests/test_zmq_client.py /opt/Kinefly_docker/
+COPY tests/test_camera.sh /opt/Kinefly_docker/
+COPY tests/test_flystate_publisher.py /opt/Kinefly_docker/
+COPY kinefly /opt/Kinefly_docker/
+COPY _internal/ /opt/Kinefly_docker/
+RUN chmod +x /opt/Kinefly_docker/kinefly /opt/Kinefly_docker/*.sh /opt/Kinefly_docker/test_camera.sh 2>/dev/null || true
+
 
 # Final setup steps
 RUN echo "export RIG=VR1" >> ~/.bashrc
