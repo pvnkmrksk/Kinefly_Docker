@@ -122,7 +122,7 @@ else
     
     # Function to sync configs on exit
     cleanup_and_sync() {
-        "$SCRIPT_DIR/sync-config-from-container.sh" "$CONTAINER_NAME" > /dev/null 2>&1
+        "$SCRIPT_DIR/_internal/sync-config-from-container.sh" "$CONTAINER_NAME" > /dev/null 2>&1
         # Stop and remove container
         docker stop "$CONTAINER_NAME" > /dev/null 2>&1
         docker rm "$CONTAINER_NAME" > /dev/null 2>&1
@@ -144,7 +144,6 @@ else
         --env="DISPLAY=${DISPLAY:-:0}" \
         --env="QT_X11_NO_MITSHM=1" \
         --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-        --volume="$(pwd)/_internal/start-kinefly-vr.sh:/opt/Kinefly_docker/start-kinefly-vr.sh:ro" \
         --name ${CONTAINER_NAME} \
         kinefly \
         sleep infinity > /dev/null 2>&1
@@ -153,12 +152,14 @@ else
     sleep 0.5
     
     # Sync configurations FROM host TO container at startup
-    "$SCRIPT_DIR/sync-config-to-container.sh" "$CONTAINER_NAME" > /dev/null 2>&1
+    "$SCRIPT_DIR/_internal/sync-config-to-container.sh" "$CONTAINER_NAME" > /dev/null 2>&1
     
     # Copy this script into container so it can be called recursively
     docker cp "$0" "${CONTAINER_NAME}:/opt/Kinefly_docker/kinefly" > /dev/null 2>&1
     docker exec ${CONTAINER_NAME} chmod +x /opt/Kinefly_docker/kinefly 2>/dev/null || true
-    # Note: start-kinefly-vr.sh is mounted as volume, so permissions come from host file
+    # Copy start-kinefly-vr.sh instead of mounting (to ensure permissions)
+    docker cp "$SCRIPT_DIR/_internal/start-kinefly-vr.sh" "${CONTAINER_NAME}:/opt/Kinefly_docker/start-kinefly-vr.sh" > /dev/null 2>&1
+    docker exec ${CONTAINER_NAME} chmod +x /opt/Kinefly_docker/start-kinefly-vr.sh 2>/dev/null || true
     
     # Now exec into container and run the script
     # The script will drop to bash console after it exits (success or failure)

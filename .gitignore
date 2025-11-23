@@ -28,7 +28,8 @@ Thumbs.db
 logs/
 
 # Backup files
-config/backup/
+config/backup/*
+_internal/config/backup/*
 *.bak
 *.backup
 

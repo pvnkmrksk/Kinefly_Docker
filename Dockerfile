@@ -111,14 +111,11 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /opt/Kinefly_docker
 
 # Copy essential scripts and files to the container
-COPY ros_zmq_bridge.py /opt/Kinefly_docker/
 COPY tests/test_zmq_client.py /opt/Kinefly_docker/
 COPY tests/test_camera.sh /opt/Kinefly_docker/
 COPY tests/test_flystate_publisher.py /opt/Kinefly_docker/
-COPY requirements.txt /opt/Kinefly_docker/
 COPY kinefly /opt/Kinefly_docker/
 COPY _internal/ /opt/Kinefly_docker/
-COPY MULTI_CAMERA_SETUP.md /opt/Kinefly_docker/
 RUN chmod +x /opt/Kinefly_docker/kinefly /opt/Kinefly_docker/*.sh /opt/Kinefly_docker/test_camera.sh 2>/dev/null || true
 
 # Install Python dependencies for ZMQ bridge
@@ -166,8 +163,8 @@ RUN echo "" >> ~/.bashrc \
 RUN rm -rf /root/catkin/src/Kinefly/launch/
 COPY launch/ /root/catkin/src/Kinefly/launch/
 COPY config/kinefly.yaml /root/
-# Copy ros_zmq_bridge.py to launch folder as well
-COPY ros_zmq_bridge.py /root/catkin/src/Kinefly/launch/
+# Copy ros_zmq_bridge.py to launch folder as well (from _internal/)
+COPY _internal/ros_zmq_bridge.py /root/catkin/src/Kinefly/launch/
 
 # Create configuration directories for each camera instance to prevent IOError
 RUN mkdir -p /root/kinefly_cam1 /root/kinefly_cam2 \
