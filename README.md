@@ -1,59 +1,356 @@
-# Kinefly ZMQ Bridge
+# Kinefly Docker Setup
 
-Simple bridge connecting Kinefly ROS topics to ZMQ for real-time wing tracking data.
+A Dockerized setup for running Kinefly (fly wing tracking system) with ROS Kinetic and ZMQ bridge for real-time data streaming.
 
-## ⚡ One Command to Start Everything
+## Table of Contents
 
-```bash
-./dev-kinefly.sh          # Start Kinefly + ZMQ bridge on port 9871
-./dev-kinefly.sh 9872     # Custom port
-```
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Ubuntu/Debian](#ubuntudebian)
+  - [Windows](#windows)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Multi-Camera Setup](#multi-camera-setup)
+- [Troubleshooting](#troubleshooting)
+- [Project Structure](#project-structure)
 
-That's it! Press Ctrl+C to stop everything gracefully.
+## Features
 
-## Container Commands
+✅ **One-command startup** - Start everything with a single command  
+✅ **Multi-camera support** - Run single or dual camera setups  
+✅ **Automatic config sync** - Launch configs automatically copied from host to container  
+✅ **Change preservation** - Container changes automatically synced back to host on exit  
+✅ **ZMQ bridge** - Real-time data streaming via ZeroMQ  
+✅ **Configurable ports** - Customize ZMQ ports to avoid conflicts  
+✅ **Graceful shutdown** - Clean process management with Ctrl+C  
 
-Once inside the container, you can also use:
-```bash
-kinefly           # Start everything on port 9871
-kinefly 9872      # Start everything on custom port
-status            # Check ROS topics and cameras  
-test-data         # Test if Kinefly is publishing data
-```
+## Prerequisites
 
-## Configuration Management
+### All Platforms
 
-### Quick Configuration Changes
-1. **Edit in container** (recommended for testing):
+- **Docker** (version 20.10 or later)
+- **Docker Compose** (optional, for advanced setups)
+- **Git** (for cloning the repository)
+
+### Ubuntu/Debian
+
+- X11 server (usually pre-installed)
+- `xhost` command (for X11 forwarding)
+
+### Windows
+
+- Docker Desktop for Windows
+- X11 server (VcXsrv or Xming)
+
+## Installation
+
+### Ubuntu/Debian
+
+1. **Install Docker:**
    ```bash
-   ./dev-kinefly.sh
-   # Once inside container, edit files:
-   nano /root/kinefly.yaml                    # Kinefly config
-   nano /root/catkin/src/Kinefly/launch/main.launch  # Launch config
+   # Update package index
+   sudo apt-get update
+   
+   # Install prerequisites
+   sudo apt-get install -y \
+       apt-transport-https \
+       ca-certificates \
+       curl \
+       gnupg \
+       lsb-release
+   
+   # Add Docker's official GPG key
+   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+   
+   # Set up stable repository
+   echo \
+     "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+     $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+   
+   # Install Docker Engine
+   sudo apt-get update
+   sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+   
+   # Add your user to docker group (to run without sudo)
+   sudo usermod -aG docker $USER
+   # Log out and back in for this to take effect
    ```
 
-2. **Copy changes back to host**:
+2. **Install X11 utilities (if not already installed):**
    ```bash
-   ./copy-config.sh  # Copies all configs from container
+   sudo apt-get install -y x11-xserver-utils
    ```
 
-3. **Rebuild container** to apply changes:
+3. **Clone and build:**
    ```bash
+   git clone <repository-url>
+   cd Kinefly_Docker
    docker build -t kinefly .
    ```
 
+### Windows
+
+1. **Install Docker Desktop:**
+   - Download from: https://www.docker.com/products/docker-desktop
+   - Install and start Docker Desktop
+
+2. **Install X11 server (VcXsrv):**
+   - Download from: https://sourceforge.net/projects/vcxsrv/
+   - Install and run XLaunch
+   - Select "Multiple windows" → "Start no client"
+   - Check "Disable access control"
+
+3. **Configure DISPLAY in Git Bash:**
+   ```bash
+   # Get Windows host IP (usually from /etc/resolv.conf or use localhost)
+   export DISPLAY=localhost:0.0
+   # Or if using WSL2 IP:
+   # export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0.0
+   ```
+
+4. **Clone and build:**
+   ```bash
+   git clone <repository-url>
+   cd Kinefly_Docker
+   docker build -t kinefly .
+   ```
+
+## Quick Start
+
+### Single Camera Setup
+
+```bash
+# Start with default port (9871)
+./dev-kinefly.sh
+
+# Start with custom port
+./dev-kinefly.sh 9872
+```
+
+### Multi-Camera Setup
+
+```bash
+# Camera 1 only
+./dev-kinefly-cam1.sh [PORT]
+
+# Camera 2 only
+./dev-kinefly-cam2.sh [PORT]
+
+# Both cameras in same container
+./dev-kinefly-dual.sh [CAM1_PORT] [CAM2_PORT]
+```
+
+## Usage
+
+### Inside the Container
+
+Once inside the container, you can use these aliases:
+
+```bash
+kinefly [PORT]         # Start single camera (default: 9871)
+kinefly-cam1 [PORT]    # Start camera 1 (default: 9871)
+kinefly-cam2 [PORT]    # Start camera 2 (default: 9872)
+kinefly-dual [P1] [P2] # Start both cameras
+status                 # List active ROS topics
+test-data              # Test single camera data
+test-cam1              # Test camera 1 data
+test-cam2              # Test camera 2 data
+```
+
+### Testing ZMQ Connection
+
+From the host machine:
+
+```bash
+# Test single camera
+python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
+
+# Test camera 1
+python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
+
+# Test camera 2
+python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9872
+```
+
+## Configuration
+
+### Automatic Configuration Sync ⚡
+
+**The setup automatically handles configuration synchronization:**
+
+1. **On Startup**: Launch configs and configuration files are automatically copied from the host to the container
+2. **On Exit**: Any changes made inside the container are automatically synced back to the host
+
+**You don't need to do anything** - just edit files either on the host or inside the container, and they'll stay in sync!
+
+**How it works:**
+- Edit files on the host → Changes are copied to container on next startup
+- Edit files inside container → Changes are copied back to host on exit
+- All changes are backed up in `config/backup/` with timestamps
+
+### Manual Configuration
+
+#### Edit Configuration Files
+
+1. **On the host:**
+   ```bash
+   # Edit launch files
+   nano launch/main.launch
+   nano launch/rhag/params_kinefly.launch
+   
+   # Edit Kinefly config
+   nano config/kinefly.yaml
+   ```
+
+2. **Changes are automatically synced** to the container on next startup
+
+#### Edit Inside Container
+
+1. **Start container:**
+   ```bash
+   ./dev-kinefly.sh
+   ```
+
+2. **Edit files inside container:**
+   ```bash
+   # Inside container
+   nano /root/kinefly.yaml
+   nano /root/catkin/src/Kinefly/launch/main.launch
+   ```
+
+3. **Exit container** - changes are automatically copied back to host
+
 ### Configuration Files
-- `config/kinefly.yaml` - Main Kinefly configuration
-- `launch/` - ROS launch files
-- `config/README.md` - Detailed configuration guide
 
-## ZMQ Output
+- **Kinefly Config**: `config/kinefly.yaml`
+- **Launch Files**: `launch/` directory
+  - `main.launch` - Main launch file
+  - `rhag/` - Single camera configuration
+  - `rhag_cam1/` - Camera 1 configuration
+  - `rhag_cam2/` - Camera 2 configuration
 
-Simple JSON format:
+## Multi-Camera Setup
+
+See [MULTI_CAMERA_SETUP.md](MULTI_CAMERA_SETUP.md) for detailed multi-camera documentation.
+
+### Quick Reference
+
+| Setup | Script | Default Ports | Video Device |
+|-------|--------|---------------|--------------|
+| Single | `./dev-kinefly.sh` | 9871 | `/dev/video0` |
+| Camera 1 | `./dev-kinefly-cam1.sh` | 9871 | `/dev/video4` |
+| Camera 2 | `./dev-kinefly-cam2.sh` | 9872 | `/dev/video6` |
+| Dual | `./dev-kinefly-dual.sh` | 9871, 9872 | `/dev/video4`, `/dev/video6` |
+
+## Troubleshooting
+
+### Docker Issues
+
+**Problem: Permission denied**
+```bash
+# Linux: Add user to docker group
+sudo usermod -aG docker $USER
+# Log out and back in
+```
+
+**Problem: Docker daemon not running**
+```bash
+# Ubuntu/Debian
+sudo systemctl start docker
+
+# Windows: Start Docker Desktop application
+```
+
+### X11 Display Issues
+
+**Problem: Cannot connect to X server**
+
+**Linux:**
+```bash
+xhost +local:docker
+```
+
+
+**Windows (WSL2):**
+```bash
+# Make sure VcXsrv is running
+export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0.0
+```
+
+### Port Already in Use
+
+```bash
+# Check what's using the port
+netstat -tlnp | grep :9871
+
+# Use a different port
+./dev-kinefly.sh 9873
+```
+
+### Camera Not Found
+
+**Linux:**
+```bash
+# List available video devices
+ls -la /dev/video*
+
+# Check camera permissions
+sudo chmod 666 /dev/video0
+```
+
+
+### Container Changes Not Preserved
+
+If changes aren't being preserved:
+1. Make sure you're exiting the container normally (not killing it)
+2. Check that the sync script ran on exit
+3. Manually copy configs: `./copy-config.sh`
+
+## Project Structure
+
+```
+Kinefly_Docker/
+├── Dockerfile                  # Docker image definition
+├── README.md                  # This file
+├── QUICK_START.md            # Quick start guide
+├── MANUAL_SETUP.md           # Manual setup instructions
+├── MULTI_CAMERA_SETUP.md     # Multi-camera guide
+├── dev-kinefly.sh            # Main startup script (single camera)
+├── dev-kinefly-cam1.sh       # Camera 1 startup script
+├── dev-kinefly-cam2.sh       # Camera 2 startup script
+├── dev-kinefly-dual.sh       # Dual camera startup script
+├── copy-config.sh            # Manual config copy script
+├── start-kinefly-all.sh      # Container startup (single)
+├── start-kinefly-cam1.sh     # Container startup (cam1)
+├── start-kinefly-cam2.sh     # Container startup (cam2)
+├── start-kinefly-dual.sh     # Container startup (dual)
+├── ros_zmq_bridge.py         # ZMQ bridge script
+├── requirements.txt          # Python dependencies
+├── config/                   # Configuration files
+│   ├── kinefly.yaml         # Main Kinefly config
+│   └── README.md            # Config documentation
+├── launch/                   # ROS launch files
+│   ├── main.launch          # Main launch file
+│   ├── rhag/                # Single camera config
+│   ├── rhag_cam1/           # Camera 1 config
+│   └── rhag_cam2/           # Camera 2 config
+└── tests/                    # Test scripts
+    ├── test_zmq_client.py    # ZMQ client test
+    ├── test_camera.sh        # Camera test
+    ├── test_flystate_publisher.py  # Test publisher
+    └── README.md             # Test documentation
+```
+
+## ZMQ Data Format
+
+The ZMQ bridge publishes JSON data in the following format:
+
 ```json
 {
   "x": 0.123,     // left wing angle (radians)
-  "y": -0.456,    // right wing angle (radians) 
+  "y": -0.456,    // right wing angle (radians)
   "z": 0.0,       // always 0
   "yaw": 0.579,   // difference (x - y)
   "pitch": 0.0,   // always 0
@@ -61,79 +358,18 @@ Simple JSON format:
 }
 ```
 
-## Features
+## Additional Resources
 
-✅ **One command startup** - Everything starts together  
-✅ **Configurable port** - No more port conflicts  
-✅ **Graceful shutdown** - Ctrl+C stops everything cleanly  
-✅ **Automatic cleanup** - Handles process management  
-✅ **Port validation** - Prevents conflicts before starting  
-✅ **Error handling** - Clear error messages and recovery  
-✅ **Easy configuration** - Edit in container, copy back to host
+- [Quick Start Guide](QUICK_START.md)
+- [Manual Setup Guide](MANUAL_SETUP.md)
+- [Multi-Camera Setup](MULTI_CAMERA_SETUP.md)
+- [Configuration Guide](config/README.md)
+- [Test Documentation](tests/README.md)
 
-## Project Structure
+## License
 
-```
-Kinefly_docker/
-├── dev-kinefly.sh           # Main startup script
-├── start-kinefly-all.sh     # Container startup script
-├── copy-config.sh           # Copy configs from container
-├── config/                  # Configuration files
-│   ├── kinefly.yaml
-│   └── README.md
-├── launch/                  # ROS launch files
-├── tests/                   # Test files
-│   ├── test_zmq_client.py
-│   ├── test_camera.sh
-│   ├── test_flystate_publisher.py
-│   └── README.md
-├── ros_zmq_bridge.py        # Core ZMQ bridge
-└── Dockerfile               # Container definition
-```
+[Add your license information here]
 
-## Testing
+## Support
 
-Test ZMQ connection:
-```bash
-python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
-```
-
-## Multi-Camera Support
-
-The system now supports multiple cameras with correct topic subscriptions:
-
-### Camera 1
-```bash
-./start-kinefly-cam1.sh [PORT]  # Uses topic: /kinefly_cam1/kinefly_cam1/flystate
-```
-
-### Camera 2  
-```bash
-./start-kinefly-cam2.sh [PORT]  # Uses topic: /kinefly_cam2/kinefly_cam2/flystate
-```
-
-### Both Cameras
-```bash
-./start-kinefly-dual.sh [CAM1_PORT] [CAM2_PORT]
-```
-
-### Topic Verification
-```bash
-./test_topics.sh              # Check available topics
-./test_bridge.sh [PORT] [TOPIC]  # Test bridge with custom config
-./verify_bridge.py --zmq-url tcp://localhost:PORT  # Verify ZMQ data
-```
-
-**Note**: Each camera uses a different ROS namespace, so the topics are:
-- Vanilla: `/kinefly/flystate`
-- Camera 1: `/kinefly_cam1/kinefly_cam1/flystate` 
-- Camera 2: `/kinefly_cam2/kinefly_cam2/flystate`
-
-### Topic Structure
-
-The double namespace structure (e.g., `/kinefly_cam1/kinefly_cam1/flystate`) is **intentional and correct** for the multi-camera setup. This ensures each camera has a unique topic name.
-
-**Verify the topics:**
-```bash
-./test_topics.sh  # Check that all expected topics exist
-```
+For issues and questions, please [open an issue](repository-url/issues) or contact the maintainers.
