@@ -1,0 +1,26 @@
+<launch>
+	<!-- ========================================================== -->
+	<!-- Launch everything needed for Kinefly VR2, except the       -->
+    <!-- source image streams.                                      -->
+	<!-- ========================================================== -->
+
+    <!-- <include file="$(find Kinefly)/launch/$(env RIG)/params_stimulus.launch" /> -->
+
+    <include file="$(find Kinefly)/launch/$(env RIG)/params_kinefly.launch"                 ns="VR2" />
+    <!--<include file="$(find Kinefly)/launch/$(env RIG)/params_ledpanels.launch"               ns="VR2" />
+    <include file="$(find Kinefly)/launch/$(env RIG)/params_phidgetsanalog.launch"          ns="VR2" />-->
+
+    <!-- Start Kinefly with the correct image topic for VR2 -->
+    <node name="VR2" pkg="Kinefly" type="kinefly.py" required="true" ns="VR2">
+        <param name="image_topic" value="/VR2/camera/image_mono" />
+        <param name="use_gui" value="true" />
+    </node>
+
+    <!--<node name="ledpanels" pkg="ledpanels" type="ledpanels.py" />-->
+    <!--<node name="flystate2ledpanels" pkg="Kinefly" type="flystate2ledpanels.py" ns="VR2" />
+    <node name="flystate2phidgetsanalog" pkg="Kinefly" type="flystate2phidgetsanalog.py" ns="VR2" />-->
+    
+    
+    
+    
+</launch>

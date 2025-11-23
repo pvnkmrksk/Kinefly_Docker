@@ -1,8 +1,8 @@
 <launch>
 
     <!-- ========================================================== -->
-    <!-- This file launches Kinefly for the hardware rig you        -->
-    <!-- are using, based on the environment variable "RIG".        -->
+    <!-- This file launches Kinefly for the VR rig you are using,   -->
+    <!-- based on the environment variable "RIG" (VR1, VR2, VR3, VR4) -->
     <!--                                                            -->
     <!-- If environment var RETRACK is set to 1, and BAGFILE is     -->
     <!-- set to a file (i.e. "export RETRACK=1" and "export         -->
@@ -11,7 +11,7 @@
     <!-- bag files, use the Kinefly/retracker program.              -->
     <!--                                                            -->
     <!-- An example:                                                -->
-    <!-- export RIG=pintether                                       -->
+    <!-- export RIG=VR1                                             -->
     <!-- export RETRACK=1                                           -->
     <!-- export BAGFILE=/home/rancher/bagfiles/12345.bag            -->
     <!-- roslaunch Kinefly main.launch                              -->

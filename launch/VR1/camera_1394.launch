@@ -1,12 +1,12 @@
 <launch>
-    <!-- Single camera node -->
-    <node name="camera" pkg="usb_cam" type="usb_cam_node" ns="rhag_camera" output="screen">
+    <!-- VR1 Camera node -->
+    <node name="camera" pkg="usb_cam" type="usb_cam_node" ns="VR1" output="screen">
         <param name="video_device" type="string" value="/dev/video4"/>
         <param name="width" type="int" value="800"/>
         <param name="height" type="int" value="600"/>
         <param name="framerate" type="int" value="120"/>
         <param name="pixel_format" value="mjpeg"/>
-        <param name="camera_frame_id" value="usb_cam"/>
+        <param name="camera_frame_id" value="usb_cam_VR1"/>
         <param name="io_method" value="mmap"/>
 
         <!-- Camera settings -->
@@ -19,7 +19,6 @@
         <param name="auto_white_balance" value="0"/>
     </node>
 
-    <!-- Single image_proc for mono conversion -->
-    <node name="image_proc" pkg="image_proc" type="image_proc" ns="rhag_camera/camera"/>
+    <!-- Image processing for mono conversion -->
+    <node name="image_proc" pkg="image_proc" type="image_proc" ns="VR1/camera"/>
 </launch>
-

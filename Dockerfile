@@ -116,14 +116,15 @@ COPY tests/test_zmq_client.py /opt/Kinefly_docker/
 COPY tests/test_camera.sh /opt/Kinefly_docker/
 COPY tests/test_flystate_publisher.py /opt/Kinefly_docker/
 COPY requirements.txt /opt/Kinefly_docker/
+COPY start-kinefly-vr.sh /opt/Kinefly_docker/
 COPY start-kinefly-all.sh /opt/Kinefly_docker/
 COPY start-kinefly-cam1.sh /opt/Kinefly_docker/
 COPY start-kinefly-cam2.sh /opt/Kinefly_docker/
 COPY start-kinefly-dual.sh /opt/Kinefly_docker/
 COPY MULTI_CAMERA_SETUP.md /opt/Kinefly_docker/
-RUN chmod +x /opt/Kinefly_docker/start-kinefly-all.sh /opt/Kinefly_docker/test_camera.sh \
-    /opt/Kinefly_docker/start-kinefly-cam1.sh /opt/Kinefly_docker/start-kinefly-cam2.sh \
-    /opt/Kinefly_docker/start-kinefly-dual.sh
+RUN chmod +x /opt/Kinefly_docker/start-kinefly-vr.sh /opt/Kinefly_docker/start-kinefly-all.sh \
+    /opt/Kinefly_docker/test_camera.sh /opt/Kinefly_docker/start-kinefly-cam1.sh \
+    /opt/Kinefly_docker/start-kinefly-cam2.sh /opt/Kinefly_docker/start-kinefly-dual.sh
 
 # Install Python dependencies for ZMQ bridge
 RUN apt-get update && apt-get install -y \
@@ -149,7 +150,7 @@ RUN pip3 install "Cython>=0.20" && \
     pip3 install "click==7.0" "pyzmq==18.1.0"
 
 # Final setup steps
-RUN echo "export RIG=rhag" >> ~/.bashrc
+RUN echo "export RIG=VR1" >> ~/.bashrc
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && source /root/catkin/devel/setup.bash && rosmake Kinefly"
 
 # Enhanced environment setup - Add all necessary environment variables and aliases
@@ -157,10 +158,11 @@ RUN echo "" >> ~/.bashrc \
     && echo "# === Kinefly Environment Setup ===" >> ~/.bashrc \
     && echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc \
     && echo "source /root/catkin/devel/setup.bash" >> ~/.bashrc \
-    && echo "export RIG=rhag" >> ~/.bashrc \
+    && echo "export RIG=VR1" >> ~/.bashrc \
     && echo "export PYTHONPATH=/root/catkin/src/Kinefly/src:\$PYTHONPATH" >> ~/.bashrc \
     && echo "" >> ~/.bashrc \
     && echo "# === Simple Aliases ===" >> ~/.bashrc \
+    && echo "alias kinefly-vr='/opt/Kinefly_docker/start-kinefly-vr.sh'" >> ~/.bashrc \
     && echo "alias kinefly='/opt/Kinefly_docker/start-kinefly-all.sh'" >> ~/.bashrc \
     && echo "alias kinefly-cam1='/opt/Kinefly_docker/start-kinefly-cam1.sh'" >> ~/.bashrc \
     && echo "alias kinefly-cam2='/opt/Kinefly_docker/start-kinefly-cam2.sh'" >> ~/.bashrc \
@@ -173,6 +175,7 @@ RUN echo "" >> ~/.bashrc \
     && echo "# Show helpful commands on login" >> ~/.bashrc \
     && echo "echo '🚀 Kinefly Container Ready!'" >> ~/.bashrc \
     && echo "echo 'Commands:'" >> ~/.bashrc \
+    && echo "echo '  kinefly-vr [VR_NUM] [PORT] - Start VR(s) (no args = all VRs, VR_NUM 1-4)'" >> ~/.bashrc \
     && echo "echo '  kinefly [PORT]         - Original single camera (default port 9871)'" >> ~/.bashrc \
     && echo "echo '  kinefly-cam1 [PORT]    - Camera 1 only (default port 9871)'" >> ~/.bashrc \
     && echo "echo '  kinefly-cam2 [PORT]    - Camera 2 only (default port 9872)'" >> ~/.bashrc \
