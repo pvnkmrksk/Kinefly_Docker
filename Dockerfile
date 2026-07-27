@@ -41,7 +41,7 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
 
 # Initialize rosdep
 RUN rosdep init \
-    && printf "python-catkin-pkg:\n  ubuntu:\n    xenial: [python-catkin-pkg]\npython-catkin-pkg-modules:\n  ubuntu:\n    xenial: [python-catkin-pkg-modules]\n" > /etc/ros/rosdep/local-python-catkin.yaml \
+    && printf "python-catkin-pkg:\n  ubuntu:\n    xenial: [python-catkin-pkg]\npython-catkin-pkg-modules:\n  ubuntu:\n    xenial: [python-catkin-pkg-modules]\npython-empy:\n  ubuntu:\n    xenial: [python-empy]\n" > /etc/ros/rosdep/local-python-catkin.yaml \
     && printf "yaml file:///etc/ros/rosdep/local-python-catkin.yaml\n" > /etc/ros/rosdep/sources.list.d/00-local-python-catkin.list \
     && rosdep update
 
@@ -99,6 +99,11 @@ RUN apt-get update && apt-get install -y \
 # Build the workspace
 WORKDIR /root/catkin
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && catkin_make  "
+
+# Legacy ROS Kinetic rosdep key compatibility for catkin manifests.
+RUN apt-get update && apt-get install -y \
+    python-empy \
+    && rm -rf /var/lib/apt/lists/*
 
 # Setup environment
 RUN echo "source ~/catkin/devel/setup.bash" >> ~/.bashrc
