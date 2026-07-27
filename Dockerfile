@@ -30,6 +30,8 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
     && apt-get install -y \
         ros-${ROS_DISTRO}-desktop-full \
         python-rosdep \
+        python-catkin-pkg \
+        python-catkin-pkg-modules \
         python-rosinstall \
         python-rosinstall-generator \
         python-wstool \
@@ -38,7 +40,10 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
     && rm -rf /var/lib/apt/lists/*
 
 # Initialize rosdep
-RUN rosdep init && rosdep update
+RUN rosdep init \
+    && printf "python-catkin-pkg:\n  ubuntu:\n    xenial: [python-catkin-pkg]\npython-catkin-pkg-modules:\n  ubuntu:\n    xenial: [python-catkin-pkg-modules]\n" > /etc/ros/rosdep/local-python-catkin.yaml \
+    && printf "yaml file:///etc/ros/rosdep/local-python-catkin.yaml\n" > /etc/ros/rosdep/sources.list.d/00-local-python-catkin.list \
+    && rosdep update
 
 # Setup environment
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
@@ -98,7 +103,7 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && catkin_make  "
 # Setup environment
 RUN echo "source ~/catkin/devel/setup.bash" >> ~/.bashrc
 
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash rosmake Kinefly"
+RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && source /root/catkin/devel/setup.bash && rosmake Kinefly"
 
 # Install guvcview
 RUN apt-get update && apt-get install -y \
