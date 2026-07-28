@@ -178,8 +178,8 @@ echo -e "  Bridge PIDs:  ${CAM1_BRIDGE_PID}, ${CAM2_BRIDGE_PID}"
 echo
 
 echo -e "${YELLOW}💡 Test connections:${NC}"
-echo -e "  python3 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:${CAM1_PORT}"
-echo -e "  python3 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:${CAM2_PORT}"
+echo -e "  python2 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:${CAM1_PORT}"
+echo -e "  python2 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:${CAM2_PORT}"
 echo
 
 # Monitor all processes
@@ -211,4 +211,4 @@ while true; do
     fi
     
     sleep 5
-done 
+done

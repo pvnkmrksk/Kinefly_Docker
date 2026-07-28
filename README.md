@@ -301,13 +301,13 @@ From the host machine:
 
 ```bash
 # Test VR1
-python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
+python2 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
 
 # Test VR2
-python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9872
+python2 tests/test_zmq_client.py --zmq-url tcp://localhost:9872
 
 # Test legacy single camera
-python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
+python2 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
 ```
 
 ### Test Without Camera
@@ -319,7 +319,7 @@ python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
    ```
 3. Test ZMQ connection from host:
    ```bash
-   python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
+   python2 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
    ```
 
 ### Test Camera

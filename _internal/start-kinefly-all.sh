@@ -167,7 +167,7 @@ echo -e "  Bridge PID:  ${BRIDGE_PID}"
 echo -e "  ZMQ Port:    ${PORT}"
 echo -e "  Topic:       /kinefly/flystate"
 echo
-echo -e "${YELLOW}💡 Test connection: python3 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:${PORT}${NC}"
+echo -e "${YELLOW}💡 Test connection: python2 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:${PORT}${NC}"
 echo
 
 # Monitor processes
@@ -187,4 +187,4 @@ while true; do
     fi
     
     sleep 5
-done 
+done

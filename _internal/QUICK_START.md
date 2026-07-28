@@ -51,7 +51,7 @@ docker build -t kinefly .
 
 ### Test ZMQ Connection
 ```bash
-python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
+python2 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
 ```
 
 ### Test Without Camera
@@ -59,7 +59,7 @@ python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
 # In container:
 python2 /opt/Kinefly_docker/test_flystate_publisher.py
 # From host:
-python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
+python2 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
 ```
 
 ## 🎯 What Was Cleaned Up
@@ -77,4 +77,4 @@ python3 tests/test_zmq_client.py --zmq-url tcp://localhost:9871
 - **Easy configuration** - Edit in container, copy back
 - **Clean structure** - Everything organized
 - **Simple testing** - All test files in one place
-- **Clear documentation** - No confusion about what to use 
+- **Clear documentation** - No confusion about what to use

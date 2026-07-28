@@ -1,9 +1,15 @@
 # Use Ubuntu 16.04 as the base image
 FROM ubuntu:16.04
 
+# Keep the EOL ROS Kinetic/Python 2 dependency metadata reproducible.
+# This is the last rosdistro revision before the legacy Python 2 keys were removed.
+ARG ROSDISTRO_SNAPSHOT=d6b7bf33d96eee741e097d63883ae91b1b38f91f
+
 # Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-ENV ROS_DISTRO=kinetic
+ENV DEBIAN_FRONTEND=noninteractive \
+    ROS_DISTRO=kinetic \
+    ROS_PYTHON_VERSION=2 \
+    ROSDISTRO_INDEX_URL=https://raw.githubusercontent.com/ros/rosdistro/${ROSDISTRO_SNAPSHOT}/index-v4.yaml
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y \
@@ -13,6 +19,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     git \
     curl \
+    python \
+    python-dev \
     python-setuptools \
     python-scipy \
     libdc1394-22-dev \
@@ -29,6 +37,7 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
     && apt-get update \
     && apt-get install -y \
         ros-${ROS_DISTRO}-desktop-full \
+        python-empy \
         python-rosdep \
         python-catkin-pkg \
         python-catkin-pkg-modules \
@@ -39,11 +48,17 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
         ros-${ROS_DISTRO}-driver-base \
     && rm -rf /var/lib/apt/lists/*
 
-# Initialize rosdep
+# Initialize rosdep using the pinned Python 2-compatible ruleset. The local
+# definitions keep Xenial resolution explicit even if a package source changes.
 RUN rosdep init \
-    && printf "python-catkin-pkg:\n  ubuntu:\n    xenial: [python-catkin-pkg]\npython-catkin-pkg-modules:\n  ubuntu:\n    xenial: [python-catkin-pkg-modules]\npython-empy:\n  ubuntu:\n    xenial: [python-empy]\n" > /etc/ros/rosdep/local-python-catkin.yaml \
-    && printf "yaml file:///etc/ros/rosdep/local-python-catkin.yaml\n" > /etc/ros/rosdep/sources.list.d/00-local-python-catkin.list \
-    && rosdep update
+    && sed -i "s|raw.githubusercontent.com/ros/rosdistro/master/|raw.githubusercontent.com/ros/rosdistro/${ROSDISTRO_SNAPSHOT}/|g" /etc/ros/rosdep/sources.list.d/20-default.list \
+    && printf "python-catkin-pkg:\n  ubuntu:\n    xenial: [python-catkin-pkg]\npython-catkin-pkg-modules:\n  ubuntu:\n    xenial: [python-catkin-pkg-modules]\npython-empy:\n  ubuntu:\n    xenial: [python-empy]\npython-rosdep:\n  ubuntu:\n    xenial: [python-rosdep]\n" > /etc/ros/rosdep/local-python2.yaml \
+    && printf "yaml file:///etc/ros/rosdep/local-python2.yaml\n" > /etc/ros/rosdep/sources.list.d/00-local-python2.list \
+    && rosdep update \
+    && rosdep resolve python-catkin-pkg \
+    && rosdep resolve python-empy \
+    && rosdep resolve python-rosdep \
+    && python -c "import sys; assert sys.version_info[0] == 2, sys.version"
 
 # Setup environment
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
@@ -100,11 +115,6 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /root/catkin
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && catkin_make  "
 
-# Legacy ROS Kinetic rosdep key compatibility for catkin manifests.
-RUN apt-get update && apt-get install -y \
-    python-empy \
-    && rm -rf /var/lib/apt/lists/*
-
 # Setup environment
 RUN echo "source ~/catkin/devel/setup.bash" >> ~/.bashrc
 
@@ -124,9 +134,8 @@ RUN mkdir -p /opt/Kinefly_docker
 # Install Python dependencies for ZMQ bridge
 RUN apt-get update && apt-get install -y \
     python-pip \
-    python3-pip \
-    && pip install "click==6.7" "pyzmq==17.1.2" \
-    && pip3 install "click==7.0" "pyzmq==18.1.0" \
+    && python -m pip install "click==6.7" "pyzmq==17.1.2" \
+    && python -c "import sys, click, zmq; assert sys.version_info[0] == 2, sys.version" \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy essential scripts and files to the container

@@ -104,12 +104,12 @@ When using the dual camera option, the script:
 
 ### Test Camera 1
 ```bash
-python3 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:9871
+python2 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:9871
 ```
 
 ### Test Camera 2
 ```bash
-python3 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:9872
+python2 /opt/Kinefly_docker/test_zmq_client.py --zmq-url tcp://localhost:9872
 ```
 
 ## ROS Topics
@@ -272,4 +272,4 @@ while True:
 | **Separate Containers** | Higher (2x Docker overhead) | Simple to manage | Independent camera control |
 | **Same Container** | Lower (shared ROS master) | Single point of control | Synchronized dual camera setup |
 
-**Recommendation:** Use the **dual camera setup** (`./dev-kinefly-dual.sh`) for most use cases as it's more efficient and easier to manage. 
+**Recommendation:** Use the **dual camera setup** (`./dev-kinefly-dual.sh`) for most use cases as it's more efficient and easier to manage.

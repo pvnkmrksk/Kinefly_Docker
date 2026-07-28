@@ -65,7 +65,7 @@ rosnode list
 ### Check ZMQ Connection
 ```bash
 # From host
-python3 test_zmq_client.py --zmq-url tcp://localhost:9871
+python2 test_zmq_client.py --zmq-url tcp://localhost:9871
 ```
 
 ### Kill All Processes
@@ -77,4 +77,4 @@ pkill -f ros_zmq_bridge
 ## Configuration Files Location
 - Kinefly config: `/root/kinefly.yaml`
 - Launch files: `/root/catkin/src/Kinefly/launch/`
-- ZMQ bridge: `/root/catkin/src/Kinefly/launch/ros_zmq_bridge.py` 
+- ZMQ bridge: `/root/catkin/src/Kinefly/launch/ros_zmq_bridge.py`
